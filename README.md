@@ -1,6 +1,8 @@
 # DocFlowCloud
 
-DocFlowCloud is a portfolio-style asynchronous document-to-PDF system built to demonstrate a realistic full-stack delivery stack:
+DocFlowCloud is an asynchronous document processing platform for uploading source files, creating background conversion jobs, tracking status in real time, and downloading generated PDF results.
+
+The solution includes a production-oriented delivery stack with:
 
 - React + TypeScript frontend
 - ASP.NET Core API and background services
@@ -13,13 +15,22 @@ DocFlowCloud is a portfolio-style asynchronous document-to-PDF system built to d
 - Terraform-based Azure infrastructure definition
 - split app / infra workflows
 
+## Highlights
+
+- asynchronous document-to-PDF processing with background workers
+- realtime job tracking in the browser via SignalR
+- local development flow and Azure cloud runtime model
+- CI/CD image promotion with Terraform-managed infrastructure
+
 ## What It Does
 
-1. Upload one or more files
-2. Create async conversion jobs
-3. Convert files to PDF in the background
-4. Push job status updates back to the browser
-5. Download the final PDF result
+DocFlowCloud supports the full document processing flow:
+
+1. Upload one or more source files from the web client
+2. Create asynchronous conversion jobs through the API
+3. Process conversions in background workers
+4. Stream job status updates back to the browser in real time
+5. Download the generated PDF output when processing completes
 
 Supported inputs:
 
@@ -143,19 +154,19 @@ Current Terraform coverage:
 ## Main Components
 
 - `src/DocFlowCloud.Web`
-  - React frontend, upload flow, jobs list, SignalR client
+  - browser client for upload, job tracking, and PDF download
 - `src/DocFlowCloud.Api`
-  - HTTP API, SignalR hub, realtime status consumer, health endpoints
+  - HTTP API, SignalR hub, status queries, and health endpoints
 - `src/DocFlowCloud.Worker`
-  - outbox publisher, job processor, retry / DLQ / stale recovery
+  - background processing, outbox publishing, retry handling, and stale recovery
 - `src/DocFlowCloud.NotificationService`
-  - secondary event consumer
+  - event-driven notification and secondary message consumption
 - `src/DocFlowCloud.Application`
-  - use cases, contracts, observability abstractions
+  - application use cases, contracts, and observability abstractions
 - `src/DocFlowCloud.Domain`
-  - entities, state transitions, inbox / outbox models
+  - domain entities, state transitions, and inbox / outbox models
 - `src/DocFlowCloud.Infrastructure`
-  - EF Core, RabbitMQ / Service Bus providers, local storage, Azure Blob, metrics implementation
+  - persistence, messaging providers, storage integrations, and metrics implementation
 
 ## Environments
 
@@ -207,25 +218,17 @@ docker compose -f docker-compose.yml -f docker-compose.testbed.yml up --build -d
 - [CI/CD And Cloud Plan](docs/cicd-cloud-plan.md)
 - [Terraform Notes](infra/README.md)
 
-## Current Status
+## Platform Capabilities
 
-The project already covers the main portfolio-grade engineering areas:
+- asynchronous document processing with background job orchestration
+- local and Azure runtime support with environment-specific messaging and storage providers
+- realtime browser updates through SignalR
+- reliability patterns including Outbox / Inbox, retry handling, stale recovery, and DLQ support
+- split application and infrastructure delivery workflows
+- structured logging, health checks, metrics, and tracing baseline
+- Terraform-defined Azure infrastructure for testbed and production environments
 
-- asynchronous application architecture
-- local and cloud runtime split
-- CI/CD with artifact promotion
-- split application and infrastructure GitHub workflows
-- structured logging, metrics, tracing baseline
-- Terraform-defined Azure infrastructure
+## Deployment Status
 
-Current rollout state:
-
-- `testbed` Terraform has been imported, aligned, and planned to zero drift
-- `prod` Terraform is ready to create a clean environment from scratch once final values are supplied
-
-Remaining work is mostly optional refinement:
-
-- production real values and first real `apply`
-- remote Terraform state backend
-- Terraform plan/apply automation in the infra workflow
-- dashboards, alerts, and deeper cloud observability
+- `testbed` infrastructure is represented in Terraform and aligned to Azure with zero-drift planning
+- `prod` environment definition is prepared with the same runtime shape for controlled promotion
