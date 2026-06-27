@@ -1,36 +1,18 @@
 # DocFlowCloud
 
-DocFlowCloud is an asynchronous document processing platform for uploading source files, creating background conversion jobs, tracking status in real time, and downloading generated PDF results.
+DocFlowCloud is an asynchronous document-to-PDF platform. It accepts source files from a web client, creates background conversion jobs, streams job status updates in real time, and exposes the generated PDF for download when processing completes.
 
-The solution includes a production-oriented delivery stack with:
+The project is built as a production-oriented .NET and React system, with local RabbitMQ development, Azure Service Bus cloud messaging, Outbox / Inbox reliability patterns, Terraform infrastructure, and GitHub Actions based image promotion.
 
-- React + TypeScript frontend
-- ASP.NET Core API and background services
-- local RabbitMQ development flow
-- cloud Azure Service Bus flow
-- Outbox / Inbox reliability patterns
-- SignalR realtime updates
-- Azure SQL, Blob, Key Vault, and Container Apps
-- GitHub Actions + GHCR promotion pipeline
-- Terraform-based Azure infrastructure definition
-- split app / infra workflows
+## Key Features
 
-## Highlights
-
-- asynchronous document-to-PDF processing with background workers
-- realtime job tracking in the browser via SignalR
-- local development flow and Azure cloud runtime model
-- CI/CD image promotion with Terraform-managed infrastructure
-
-## What It Does
-
-DocFlowCloud supports the full document processing flow:
-
-1. Upload one or more source files from the web client
-2. Create asynchronous conversion jobs through the API
-3. Process conversions in background workers
-4. Stream job status updates back to the browser in real time
-5. Download the generated PDF output when processing completes
+- async document-to-PDF jobs with background workers
+- realtime browser updates through SignalR
+- Outbox / Inbox based message reliability and idempotency
+- local development with SQL Server, RabbitMQ, and local file storage
+- Azure runtime model with Container Apps, Azure SQL, Blob Storage, Service Bus, and Key Vault
+- Terraform infrastructure for `testbed` and `prod`
+- CI/CD flow that validates PRs, deploys `testbed`, and promotes validated images to production
 
 Supported inputs:
 
@@ -39,177 +21,120 @@ Supported inputs:
 - markdown: `md`
 - html: `html`, `htm`
 
-## System Overview
+## Architecture
 
 ```mermaid
 flowchart LR
-    subgraph Local["Local Development"]
-        LWeb[Web]
-        LApi[API]
-        LWorker[Worker]
-        LNotif[Notification]
-        LRabbit[(RabbitMQ)]
-        LFiles[(Local Storage)]
-        LSql[(Local SQL Server)]
-        LWeb --> LApi
-        LApi --> LSql
-        LApi --> LFiles
-        LApi --> LRabbit
-        LRabbit --> LWorker
-        LRabbit --> LNotif
-        LWorker --> LFiles
-        LWorker --> LSql
-        LNotif --> LSql
-    end
+    Web[React Web] --> Api[ASP.NET Core API]
+    Api --> Db[(SQL)]
+    Api --> Storage[(File Storage)]
+    Api --> Outbox[(Outbox)]
 
-    subgraph Cloud["Azure Testbed / Production"]
-        Web[Container App Web]
-        Api[Container App API]
-        Worker[Container App Worker]
-        Notif[Container App Notification]
-        Migrator[Container App Job Migrator]
-        Sql[(Azure SQL)]
-        Blob[(Azure Blob)]
-        Bus[(Azure Service Bus)]
-        Kv[(Key Vault)]
-        Web --> Api
-        Api --> Sql
-        Api --> Blob
-        Api --> Bus
-        Worker --> Sql
-        Worker --> Blob
-        Worker --> Bus
-        Notif --> Sql
-        Notif --> Bus
-        Migrator --> Sql
-        Api -. managed identity + secret ref .-> Kv
-        Worker -. managed identity + secret ref .-> Kv
-        Notif -. managed identity + secret ref .-> Kv
-        Migrator -. managed identity + secret ref .-> Kv
-    end
+    Outbox --> Bus[(RabbitMQ / Service Bus)]
+    Bus --> Worker[Worker]
+    Bus --> Notification[Notification Service]
+    Bus --> Realtime[API Realtime Consumer]
+
+    Worker --> Db
+    Worker --> Storage
+    Worker --> Bus
+
+    Realtime --> SignalR[SignalR Hub]
+    SignalR --> Web
 ```
 
-## Delivery Model
+## Processing Flow
 
 ```mermaid
-flowchart LR
-    PR[Pull request] --> CI[Build and test]
-    TestPush[Push to test] --> Build[Build and push images to GHCR]
-    Build --> Migrator[Run testbed migrator if migrations changed]
-    Migrator --> Testbed[Deploy testbed apps]
-    Testbed --> Validate[Validate runtime]
-    Validate --> Promote[Manual production promote by image tag]
-    Promote --> ProdMigrator[Run prod migrator if needed]
-    ProdMigrator --> Prod[Update prod apps]
-    Prod --> Rollback[Rollback by promoting an older validated tag]
+sequenceDiagram
+    participant User
+    participant Web
+    participant API
+    participant DB
+    participant Bus
+    participant Worker
+    participant Storage
+    participant SignalR
+
+    User->>Web: Upload document
+    Web->>API: Create conversion job
+    API->>Storage: Save source file
+    API->>DB: Save Job + OutboxMessage
+    API-->>Web: Return job id
+
+    DB->>Bus: Outbox publisher sends job.created
+    Bus->>Worker: Deliver job.created
+    Worker->>Storage: Read source and save PDF
+    Worker->>DB: Update job status
+    Worker->>Bus: Publish job.status.changed
+    Bus->>API: Deliver status update
+    API->>SignalR: Push jobUpdated
+    SignalR->>Web: Refresh job status
 ```
-
-## Observability Baseline
-
-- structured Serilog console logs in `Testbed` and `Production`
-- key business logs for job lifecycle
-- API health endpoints:
-  - `/health`
-  - `/health/live`
-  - `/health/ready`
-- basic metrics instrumentation:
-  - `jobs_created_total`
-  - `jobs_succeeded_total`
-  - `jobs_failed_total`
-  - `jobs_retried_total`
-  - `job_processing_duration_seconds`
-- minimal OpenTelemetry tracing baseline for:
-  - job creation
-  - worker side-effect execution
-  - notification processing
-
-## Infrastructure As Code
-
-Terraform now defines the Azure runtime shape with separate root modules for:
-
-- `infra/environments/testbed`
-- `infra/environments/prod`
-
-Current Terraform coverage:
-
-- resource group
-- log analytics workspace
-- container apps environment
-- SQL server and database
-- storage account and blob container
-- service bus namespace, topic, and subscriptions
-- key vault
-- container apps:
-  - api
-  - web
-  - worker
-  - notification
-- container app job:
-  - migrator
-- managed identity, Key Vault secret references, and GHCR registry auth
-- image drift intentionally ignored in Terraform so CI/CD remains the image source of truth
-- `testbed` imported and aligned to Azure with `terraform plan => No changes`
-- `prod` prepared as create-from-scratch infrastructure with clean `terraform plan`
 
 ## Main Components
 
-- `src/DocFlowCloud.Web`
-  - browser client for upload, job tracking, and PDF download
-- `src/DocFlowCloud.Api`
-  - HTTP API, SignalR hub, status queries, and health endpoints
-- `src/DocFlowCloud.Worker`
-  - background processing, outbox publishing, retry handling, and stale recovery
-- `src/DocFlowCloud.NotificationService`
-  - event-driven notification and secondary message consumption
-- `src/DocFlowCloud.Application`
-  - application use cases, contracts, and observability abstractions
-- `src/DocFlowCloud.Domain`
-  - domain entities, state transitions, and inbox / outbox models
-- `src/DocFlowCloud.Infrastructure`
-  - persistence, messaging providers, storage integrations, and metrics implementation
+- `src/DocFlowCloud.Web` - React client for uploads, job tracking, realtime updates, and PDF downloads
+- `src/DocFlowCloud.Api` - HTTP API, SignalR hub, job queries, result downloads, and health endpoints
+- `src/DocFlowCloud.Worker` - job processing, PDF generation, outbox publishing, retries, and stale recovery
+- `src/DocFlowCloud.NotificationService` - secondary event consumer with inbox-based processing
+- `src/DocFlowCloud.Application` - use cases, contracts, messaging DTOs, and application abstractions
+- `src/DocFlowCloud.Domain` - job state model, inbox and outbox entities, and domain rules
+- `src/DocFlowCloud.Infrastructure` - EF Core persistence, storage providers, messaging providers, and metrics
 
-## Environments
+## Runtime Model
 
-- `Development`
-  - local Docker / IDE workflow
-  - RabbitMQ
-  - local file storage
-- `Testbed`
-  - Azure cloud pre-production
-  - automatic image deployment from `test`
-  - Azure Service Bus, Blob, SQL, Key Vault, Container Apps
-- `Production`
-  - Azure cloud production
-  - manual promotion by validated image tag
-  - same runtime shape as testbed
+`Development` uses SQL Server, RabbitMQ, and local file storage.
+
+`Testbed` and `Production` use Azure Container Apps, Azure SQL, Azure Blob Storage, Azure Service Bus, Key Vault, managed identities, and a one-off migrator job. The same application code switches providers through environment configuration.
 
 ## Local Run
 
-### Option A: day-to-day development
+Start the local dependencies:
 
 ```powershell
 docker compose up -d sqlserver rabbitmq
+```
+
+Run the services:
+
+```powershell
 dotnet run --project src/DocFlowCloud.Api
 dotnet run --project src/DocFlowCloud.Worker
 dotnet run --project src/DocFlowCloud.NotificationService
+```
+
+Run the web client:
+
+```powershell
 cd src/DocFlowCloud.Web
 npm install
 npm run dev
 ```
 
-### Option B: full local development stack
+For a full containerized local stack:
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
 
-### Option C: local testbed simulation
+## Delivery
 
-```powershell
-docker compose -f docker-compose.yml -f docker-compose.testbed.yml up --build -d
-```
+Pull requests run build and test checks. Pushes to `test` build images, push them to GHCR, run the migrator when needed, and deploy the testbed environment. Production is promoted manually by selecting an image tag that was already validated in testbed.
 
-## Docs
+Infrastructure changes are handled separately through Terraform validation workflows. Detailed deployment and rollback steps live in the release runbook.
+
+## Observability
+
+The platform includes structured Serilog logs, health endpoints, job lifecycle metrics, and a baseline OpenTelemetry trace setup for API, worker, and notification processing.
+
+Health endpoints:
+
+- `/health`
+- `/health/live`
+- `/health/ready`
+
+## Documentation
 
 - [Architecture](docs/architecture.md)
 - [System Flow](docs/system-flow.md)
@@ -217,18 +142,3 @@ docker compose -f docker-compose.yml -f docker-compose.testbed.yml up --build -d
 - [Release Runbook](docs/release-runbook.md)
 - [CI/CD And Cloud Plan](docs/cicd-cloud-plan.md)
 - [Terraform Notes](infra/README.md)
-
-## Platform Capabilities
-
-- asynchronous document processing with background job orchestration
-- local and Azure runtime support with environment-specific messaging and storage providers
-- realtime browser updates through SignalR
-- reliability patterns including Outbox / Inbox, retry handling, stale recovery, and DLQ support
-- split application and infrastructure delivery workflows
-- structured logging, health checks, metrics, and tracing baseline
-- Terraform-defined Azure infrastructure for testbed and production environments
-
-## Deployment Status
-
-- `testbed` infrastructure is represented in Terraform and aligned to Azure with zero-drift planning
-- `prod` environment definition is prepared with the same runtime shape for controlled promotion
