@@ -1,6 +1,6 @@
-# DocFlowCloud
+# CloudDocumentPipeline
 
-DocFlowCloud is an asynchronous document-to-PDF platform. It accepts source files from a web client, creates background conversion jobs, streams job status updates in real time, and exposes the generated PDF for download when processing completes.
+CloudDocumentPipeline is an asynchronous document-to-PDF platform. It accepts source files from a web client, creates background conversion jobs, streams job status updates in real time, and exposes the generated PDF for download when processing completes.
 
 The project is built as a production-oriented .NET and React system, with local RabbitMQ development, Azure Service Bus cloud messaging, Outbox / Inbox reliability patterns, Terraform infrastructure, and GitHub Actions based image promotion.
 
@@ -74,13 +74,13 @@ sequenceDiagram
 
 ## Main Components
 
-- `src/DocFlowCloud.Web` - React client for uploads, job tracking, realtime updates, and PDF downloads
-- `src/DocFlowCloud.Api` - HTTP API, SignalR hub, job queries, result downloads, and health endpoints
-- `src/DocFlowCloud.Worker` - job processing, PDF generation, outbox publishing, retries, and stale recovery
-- `src/DocFlowCloud.NotificationService` - secondary event consumer with inbox-based processing
-- `src/DocFlowCloud.Application` - use cases, contracts, messaging DTOs, and application abstractions
-- `src/DocFlowCloud.Domain` - job state model, inbox and outbox entities, and domain rules
-- `src/DocFlowCloud.Infrastructure` - EF Core persistence, storage providers, messaging providers, and metrics
+- `src/CloudDocumentPipeline.Web` - React client for uploads, job tracking, realtime updates, and PDF downloads
+- `src/CloudDocumentPipeline.Api` - HTTP API, SignalR hub, job queries, result downloads, and health endpoints
+- `src/CloudDocumentPipeline.Worker` - job processing, PDF generation, outbox publishing, retries, and stale recovery
+- `src/CloudDocumentPipeline.NotificationService` - secondary event consumer with inbox-based processing
+- `src/CloudDocumentPipeline.Application` - use cases, contracts, messaging DTOs, and application abstractions
+- `src/CloudDocumentPipeline.Domain` - job state model, inbox and outbox entities, and domain rules
+- `src/CloudDocumentPipeline.Infrastructure` - EF Core persistence, storage providers, messaging providers, and metrics
 
 ## Runtime Model
 
@@ -99,15 +99,15 @@ docker compose up -d sqlserver rabbitmq
 Run the services:
 
 ```powershell
-dotnet run --project src/DocFlowCloud.Api
-dotnet run --project src/DocFlowCloud.Worker
-dotnet run --project src/DocFlowCloud.NotificationService
+dotnet run --project src/CloudDocumentPipeline.Api
+dotnet run --project src/CloudDocumentPipeline.Worker
+dotnet run --project src/CloudDocumentPipeline.NotificationService
 ```
 
 Run the web client:
 
 ```powershell
-cd src/DocFlowCloud.Web
+cd src/CloudDocumentPipeline.Web
 npm install
 npm run dev
 ```

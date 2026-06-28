@@ -1,0 +1,16 @@
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS migrator
+WORKDIR /src
+
+COPY ["CloudDocumentPipeline.sln", "."]
+COPY ["src/CloudDocumentPipeline.Api/CloudDocumentPipeline.Api.csproj", "src/CloudDocumentPipeline.Api/"]
+COPY ["src/CloudDocumentPipeline.Application/CloudDocumentPipeline.Application.csproj", "src/CloudDocumentPipeline.Application/"]
+COPY ["src/CloudDocumentPipeline.Domain/CloudDocumentPipeline.Domain.csproj", "src/CloudDocumentPipeline.Domain/"]
+COPY ["src/CloudDocumentPipeline.Infrastructure/CloudDocumentPipeline.Infrastructure.csproj", "src/CloudDocumentPipeline.Infrastructure/"]
+RUN dotnet restore "src/CloudDocumentPipeline.Api/CloudDocumentPipeline.Api.csproj"
+
+COPY . .
+RUN dotnet tool install --global dotnet-ef --version 10.0.0
+
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
+ENTRYPOINT ["dotnet", "ef", "database", "update", "--project", "src/CloudDocumentPipeline.Infrastructure", "--startup-project", "src/CloudDocumentPipeline.Api"]

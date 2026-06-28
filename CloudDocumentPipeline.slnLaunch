@@ -1,0 +1,11 @@
+[
+  {
+    "Name": "鏂板缓閰嶇疆鏂囦欢",
+    "Projects": [
+      {
+        "Path": "src\\CloudDocumentPipeline.Api\\CloudDocumentPipeline.Api.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

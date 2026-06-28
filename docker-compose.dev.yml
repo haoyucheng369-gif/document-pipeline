@@ -7,26 +7,26 @@ x-app-local-settings: &app-local-settings
 services:
   migrator:
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudDevDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineDevDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
 
   api:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudDevDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineDevDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
       <<: *app-local-settings
       RabbitMq__VirtualHost: /docflow-dev
 
   worker:
     environment:
       DOTNET_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudDevDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineDevDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
       <<: *app-local-settings
       RabbitMq__VirtualHost: /docflow-dev
 
   notification-service:
     environment:
       DOTNET_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudDevDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineDevDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
       <<: *app-local-settings
       RabbitMq__VirtualHost: /docflow-dev
 

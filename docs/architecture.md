@@ -1,18 +1,18 @@
 # Architecture
 
-`DocFlowCloud` is an asynchronous document-to-PDF system designed to demonstrate a realistic application architecture across local development, cloud testbed, and production.
+`CloudDocumentPipeline` is an asynchronous document-to-PDF system designed to demonstrate a realistic application architecture across local development, cloud testbed, and production.
 
 ## High-Level Shape
 
 ```mermaid
 flowchart LR
-    Web[DocFlowCloud.Web] --> Api[DocFlowCloud.Api]
-    Api --> App[DocFlowCloud.Application]
-    App --> Domain[DocFlowCloud.Domain]
-    Api --> Infra[DocFlowCloud.Infrastructure]
-    Worker[DocFlowCloud.Worker] --> App
+    Web[CloudDocumentPipeline.Web] --> Api[CloudDocumentPipeline.Api]
+    Api --> App[CloudDocumentPipeline.Application]
+    App --> Domain[CloudDocumentPipeline.Domain]
+    Api --> Infra[CloudDocumentPipeline.Infrastructure]
+    Worker[CloudDocumentPipeline.Worker] --> App
     Worker --> Infra
-    Notification[DocFlowCloud.NotificationService] --> App
+    Notification[CloudDocumentPipeline.NotificationService] --> App
     Notification --> Infra
     Infra --> Sql[(SQL)]
     Infra --> Storage[(File Storage)]
@@ -21,7 +21,7 @@ flowchart LR
 
 ## Layers
 
-### `DocFlowCloud.Web`
+### `CloudDocumentPipeline.Web`
 
 Responsibilities:
 
@@ -31,7 +31,7 @@ Responsibilities:
 - subscribe to SignalR updates
 - download the generated PDF
 
-### `DocFlowCloud.Api`
+### `CloudDocumentPipeline.Api`
 
 Responsibilities:
 
@@ -44,11 +44,11 @@ Responsibilities:
 
 Key files:
 
-- `src/DocFlowCloud.Api/Program.cs`
-- `src/DocFlowCloud.Api/Controllers/JobsController.cs`
-- `src/DocFlowCloud.Api/Realtime/ServiceBusJobStatusUpdatesConsumer.cs`
+- `src/CloudDocumentPipeline.Api/Program.cs`
+- `src/CloudDocumentPipeline.Api/Controllers/JobsController.cs`
+- `src/CloudDocumentPipeline.Api/Realtime/ServiceBusJobStatusUpdatesConsumer.cs`
 
-### `DocFlowCloud.Application`
+### `CloudDocumentPipeline.Application`
 
 Responsibilities:
 
@@ -59,11 +59,11 @@ Responsibilities:
 
 Key files:
 
-- `src/DocFlowCloud.Application/Jobs/JobService.cs`
-- `src/DocFlowCloud.Application/Abstractions/Observability/IJobMetrics.cs`
-- `src/DocFlowCloud.Application/Abstractions/Observability/DocFlowCloudTracing.cs`
+- `src/CloudDocumentPipeline.Application/Jobs/JobService.cs`
+- `src/CloudDocumentPipeline.Application/Abstractions/Observability/IJobMetrics.cs`
+- `src/CloudDocumentPipeline.Application/Abstractions/Observability/CloudDocumentPipelineTracing.cs`
 
-### `DocFlowCloud.Domain`
+### `CloudDocumentPipeline.Domain`
 
 Responsibilities:
 
@@ -79,7 +79,7 @@ Core concepts:
 - inbox claim / processing state
 - outbox persistence before publish
 
-### `DocFlowCloud.Infrastructure`
+### `CloudDocumentPipeline.Infrastructure`
 
 Responsibilities:
 
@@ -96,12 +96,12 @@ Design note:
 
 Key files:
 
-- `src/DocFlowCloud.Infrastructure/DependencyInjection.cs`
-- `src/DocFlowCloud.Infrastructure/Messaging/ServiceBusJobMessagePublisher.cs`
-- `src/DocFlowCloud.Infrastructure/Storage/AzureBlobFileStorage.cs`
-- `src/DocFlowCloud.Infrastructure/Observability/JobMetrics.cs`
+- `src/CloudDocumentPipeline.Infrastructure/DependencyInjection.cs`
+- `src/CloudDocumentPipeline.Infrastructure/Messaging/ServiceBusJobMessagePublisher.cs`
+- `src/CloudDocumentPipeline.Infrastructure/Storage/AzureBlobFileStorage.cs`
+- `src/CloudDocumentPipeline.Infrastructure/Observability/JobMetrics.cs`
 
-### `DocFlowCloud.Worker`
+### `CloudDocumentPipeline.Worker`
 
 Responsibilities:
 
@@ -113,12 +113,12 @@ Responsibilities:
 
 Key files:
 
-- `src/DocFlowCloud.Worker/OutboxPublisherWorker.cs`
-- `src/DocFlowCloud.Worker/ServiceBusWorker.cs`
-- `src/DocFlowCloud.Worker/JobSideEffectExecutor.cs`
-- `src/DocFlowCloud.Worker/StaleInboxRecoveryWorker.cs`
+- `src/CloudDocumentPipeline.Worker/OutboxPublisherWorker.cs`
+- `src/CloudDocumentPipeline.Worker/ServiceBusWorker.cs`
+- `src/CloudDocumentPipeline.Worker/JobSideEffectExecutor.cs`
+- `src/CloudDocumentPipeline.Worker/StaleInboxRecoveryWorker.cs`
 
-### `DocFlowCloud.NotificationService`
+### `CloudDocumentPipeline.NotificationService`
 
 Responsibilities:
 
@@ -128,7 +128,7 @@ Responsibilities:
 
 Key files:
 
-- `src/DocFlowCloud.NotificationService/ServiceBusNotificationWorker.cs`
+- `src/CloudDocumentPipeline.NotificationService/ServiceBusNotificationWorker.cs`
 
 ## Data and Storage
 

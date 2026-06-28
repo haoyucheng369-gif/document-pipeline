@@ -4,7 +4,7 @@ locals {
   log_analytics_name                    = "log-${var.project_name}-${local.environment}"
   container_app_environment_name        = "cae-${var.project_name}-${local.environment}"
   sql_server_name                       = "${var.project_name}-${local.environment}-sql"
-  sql_database_name                     = "DocFlowCloudTestbedDb"
+  sql_database_name                     = "CloudDocumentPipelineTestbedDb"
   storage_account_name                  = "stg${var.project_name}${local.environment}"
   blob_container_name                   = "docflow-testbed-files"
   service_bus_namespace_name            = "sb-${var.project_name}-${local.environment}"

@@ -1,6 +1,6 @@
 # System Flow
 
-This document describes the current end-to-end async flow in `DocFlowCloud`.
+This document describes the current end-to-end async flow in `CloudDocumentPipeline`.
 
 ## Environment Split
 
@@ -29,8 +29,8 @@ flowchart TD
     H --> I[Subscription: worker]
     H --> J[Subscription: notification]
     H --> K[Subscription: api-realtime]
-    I --> L[DocFlowCloud.Worker]
-    J --> M[DocFlowCloud.NotificationService]
+    I --> L[CloudDocumentPipeline.Worker]
+    J --> M[CloudDocumentPipeline.NotificationService]
     K --> N[ServiceBusJobStatusUpdatesConsumer]
     L --> O[(InboxMessages)]
     L --> P[JobSideEffectExecutor]
@@ -49,8 +49,8 @@ flowchart TD
    - a `Job`
    - an `OutboxMessage`
 5. `OutboxPublisherWorker` publishes `job.created` to the `job-events` topic.
-6. The `worker` subscription is consumed by `DocFlowCloud.Worker`.
-7. The `notification` subscription is consumed by `DocFlowCloud.NotificationService`.
+6. The `worker` subscription is consumed by `CloudDocumentPipeline.Worker`.
+7. The `notification` subscription is consumed by `CloudDocumentPipeline.NotificationService`.
 8. The worker loads the source file and performs the conversion.
 9. The worker saves the generated PDF and updates `Job` + `InboxMessage`.
 10. The worker publishes `job.status.changed`.

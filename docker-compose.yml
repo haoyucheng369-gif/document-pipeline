@@ -73,10 +73,10 @@ services:
   migrator:
     build:
       context: .
-      dockerfile: src/DocFlowCloud.Api/Dockerfile.migrator
+      dockerfile: src/CloudDocumentPipeline.Api/Dockerfile.migrator
     container_name: docflow-migrator
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
     depends_on:
       sqlserver:
         condition: service_healthy
@@ -86,7 +86,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/DocFlowCloud.Api/Dockerfile
+      dockerfile: src/CloudDocumentPipeline.Api/Dockerfile
     container_name: docflow-api
     environment:
       ASPNETCORE_URLS: http://+:8080
@@ -103,7 +103,7 @@ services:
   worker:
     build:
       context: .
-      dockerfile: src/DocFlowCloud.Worker/Dockerfile
+      dockerfile: src/CloudDocumentPipeline.Worker/Dockerfile
     container_name: docflow-worker
     environment:
       RabbitMq__HostName: rabbitmq
@@ -117,7 +117,7 @@ services:
   notification-service:
     build:
       context: .
-      dockerfile: src/DocFlowCloud.NotificationService/Dockerfile
+      dockerfile: src/CloudDocumentPipeline.NotificationService/Dockerfile
     container_name: docflow-notification
     environment:
       RabbitMq__HostName: rabbitmq
@@ -131,7 +131,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: src/DocFlowCloud.Web/Dockerfile
+      dockerfile: src/CloudDocumentPipeline.Web/Dockerfile
     container_name: docflow-web
     depends_on:
       api:
