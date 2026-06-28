@@ -1,6 +1,6 @@
 # CI/CD And Cloud Plan
 
-This document describes the current delivery model for `DocFlowCloud`.
+This document describes the current delivery model for `CloudDocumentPipeline`.
 
 ## Goal
 

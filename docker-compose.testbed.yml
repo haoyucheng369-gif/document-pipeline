@@ -7,26 +7,26 @@ x-app-local-settings: &app-local-settings
 services:
   migrator:
     environment:
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudTestbedDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineTestbedDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
 
   api:
     environment:
       ASPNETCORE_ENVIRONMENT: Testbed
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudTestbedDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineTestbedDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
       <<: *app-local-settings
       RabbitMq__VirtualHost: /docflow-testbed
 
   worker:
     environment:
       DOTNET_ENVIRONMENT: Testbed
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudTestbedDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineTestbedDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
       <<: *app-local-settings
       RabbitMq__VirtualHost: /docflow-testbed
 
   notification-service:
     environment:
       DOTNET_ENVIRONMENT: Testbed
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=DocFlowCloudTestbedDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=CloudDocumentPipelineTestbedDb;User Id=sa;Password=Your_password123!;TrustServerCertificate=True"
       <<: *app-local-settings
       RabbitMq__VirtualHost: /docflow-testbed
 

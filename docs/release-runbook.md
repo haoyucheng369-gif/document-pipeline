@@ -1,6 +1,6 @@
 # Release Runbook
 
-This runbook describes the current image-tag promotion model for `DocFlowCloud`.
+This runbook describes the current image-tag promotion model for `CloudDocumentPipeline`.
 
 ## Current Model
 
@@ -64,7 +64,7 @@ Optional custom tag support:
 ## How To Promote Production
 
 1. Open GitHub Actions.
-2. Select the `DocFlowCloud CI/CD` workflow.
+2. Select the `CloudDocumentPipeline CI/CD` workflow.
 3. Click `Run workflow`.
 4. Choose branch `master`.
 5. Enter the validated `image_tag`.
@@ -156,7 +156,7 @@ Check:
 
 Current workflow behavior:
 
-- if `src/DocFlowCloud.Infrastructure/Migrations/` has no changes, migrator is skipped
+- if `src/CloudDocumentPipeline.Infrastructure/Migrations/` has no changes, migrator is skipped
 
 ## Operational Notes
 

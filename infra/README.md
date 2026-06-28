@@ -1,25 +1,25 @@
-# Terraform 目录结构
+# Terraform 鐩綍缁撴瀯
 
-这个目录存放 `DocFlowCloud` 的 Azure 基础设施代码。
+杩欎釜鐩綍瀛樻斁 `CloudDocumentPipeline` 鐨?Azure 鍩虹璁炬柦浠ｇ爜銆?
 
-## 结构说明
+## 缁撴瀯璇存槑
 
 - `modules/`
-  - 可复用的 Azure 资源模块
+  - 鍙鐢ㄧ殑 Azure 璧勬簮妯″潡
 - `environments/testbed/`
-  - testbed 环境入口
+  - testbed 鐜鍏ュ彛
 - `environments/prod/`
-  - prod 环境入口
+  - prod 鐜鍏ュ彛
 
-每个环境目录本身都是一个独立的 Terraform root module，所以：
+姣忎釜鐜鐩綍鏈韩閮芥槸涓€涓嫭绔嬬殑 Terraform root module锛屾墍浠ワ細
 
-- provider 声明放在 `environments/*`
-- 环境变量和命名规则也放在 `environments/*`
-- `main.tf` 再去组合 `modules/*`
+- provider 澹版槑鏀惧湪 `environments/*`
+- 鐜鍙橀噺鍜屽懡鍚嶈鍒欎篃鏀惧湪 `environments/*`
+- `main.tf` 鍐嶅幓缁勫悎 `modules/*`
 
-## 当前模块
+## 褰撳墠妯″潡
 
-当前已经有的模块：
+褰撳墠宸茬粡鏈夌殑妯″潡锛?
 
 - `resource-group`
 - `log-analytics`
@@ -31,9 +31,9 @@
 - `container-app`
 - `container-app-job`
 
-## 当前覆盖范围
+## 褰撳墠瑕嗙洊鑼冨洿
 
-### 基础设施底座
+### 鍩虹璁炬柦搴曞骇
 
 - Resource Group
 - Log Analytics Workspace
@@ -43,7 +43,7 @@
 - Service Bus Namespace + Topic + Subscriptions
 - Key Vault
 
-### 运行层
+### 杩愯灞?
 
 - `api`
 - `web`
@@ -51,21 +51,21 @@
 - `notification`
 - `migrator` job
 
-### 运行时关键配置
+### 杩愯鏃跺叧閿厤缃?
 
 - Managed Identity
 - Key Vault secret references
-- SQL / Blob / Service Bus secret 注入
-- GHCR 私有镜像拉取认证
+- SQL / Blob / Service Bus secret 娉ㄥ叆
+- GHCR 绉佹湁闀滃儚鎷夊彇璁よ瘉
 - API probes
-- worker / notification 副本参数
-- ingress 细配置
+- worker / notification 鍓湰鍙傛暟
+- ingress 缁嗛厤缃?
 - revision mode
 - migrator job timeout / retry / parallelism
 
-## 调用方式
+## 璋冪敤鏂瑰紡
 
-每个环境的执行链可以近似理解成：
+姣忎釜鐜鐨勬墽琛岄摼鍙互杩戜技鐞嗚В鎴愶細
 
 ```text
 terraform.tfvars
@@ -77,30 +77,30 @@ terraform.tfvars
 -> outputs.tf
 ```
 
-也就是：
+涔熷氨鏄細
 
 - `variables.tf`
-  - 定义输入
+  - 瀹氫箟杈撳叆
 - `terraform.tfvars`
-  - 提供环境实际参数
+  - 鎻愪緵鐜瀹為檯鍙傛暟
 - `locals.tf`
-  - 拼装命名和中间值
+  - 鎷艰鍛藉悕鍜屼腑闂村€?
 - `main.tf`
-  - 调用模块
+  - 璋冪敤妯″潡
 - `outputs.tf`
-  - 暴露关键结果
+  - 鏆撮湶鍏抽敭缁撴灉
 
-## Secret 和镜像参数约定
+## Secret 鍜岄暅鍍忓弬鏁扮害瀹?
 
 - `terraform.tfvars`
-  - 只保留非敏感环境参数
+  - 鍙繚鐣欓潪鏁忔劅鐜鍙傛暟
 - `secrets.auto.tfvars`
-  - 放本地敏感值和镜像地址
-  - 已加入 `.gitignore`
+  - 鏀炬湰鍦版晱鎰熷€煎拰闀滃儚鍦板潃
+  - 宸插姞鍏?`.gitignore`
 - `secrets.auto.tfvars.example`
-  - 只作为示例模板，不提交真实值
+  - 鍙綔涓虹ず渚嬫ā鏉匡紝涓嶆彁浜ょ湡瀹炲€?
 
-常见本地敏感参数包括：
+甯歌鏈湴鏁忔劅鍙傛暟鍖呮嫭锛?
 
 - `sql_administrator_login_password`
 - `sql_connection_string`
@@ -114,22 +114,22 @@ terraform.tfvars
 - `notification_image`
 - `migrator_image`
 
-如果后续接入 CI/CD，更推荐使用：
+濡傛灉鍚庣画鎺ュ叆 CI/CD锛屾洿鎺ㄨ崘浣跨敤锛?
 
-- `TF_VAR_*` 环境变量
+- `TF_VAR_*` 鐜鍙橀噺
 - GitHub environment secrets
 
-## 当前状态
+## 褰撳墠鐘舵€?
 
-这套 Terraform 主线已经完成到：
+杩欏 Terraform 涓荤嚎宸茬粡瀹屾垚鍒帮細
 
-- 基础设施结构完整
-- 运行层结构完整
-- 运行时关键配置基本对齐现网
+- 鍩虹璁炬柦缁撴瀯瀹屾暣
+- 杩愯灞傜粨鏋勫畬鏁?
+- 杩愯鏃跺叧閿厤缃熀鏈榻愮幇缃?
 
-当前更像“可落地前的收尾阶段”，还差的主要是：
+褰撳墠鏇村儚鈥滃彲钀藉湴鍓嶇殑鏀跺熬闃舵鈥濓紝杩樺樊鐨勪富瑕佹槸锛?
 
-- 真实值注入
-- 第一次真实 `terraform plan/apply`
-- 可选的 remote state backend
-- 可选的 infra workflow
+- 鐪熷疄鍊兼敞鍏?
+- 绗竴娆＄湡瀹?`terraform plan/apply`
+- 鍙€夌殑 remote state backend
+- 鍙€夌殑 infra workflow
