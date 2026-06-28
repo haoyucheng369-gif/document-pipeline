@@ -1,42 +1,37 @@
-# CloudDocumentPipeline
+# Document Pipeline
 
-CloudDocumentPipeline is an asynchronous document-to-PDF platform. It accepts source files from a web client, creates background conversion jobs, streams job status updates in real time, and exposes the generated PDF for download when processing completes.
+Document Pipeline is a cloud-ready document processing system built with ASP.NET Core, React, background workers, RabbitMQ, SignalR, Outbox/Inbox reliability patterns, Terraform, and Azure deployment targets.
 
-The project is built as a production-oriented .NET and React system, with local RabbitMQ development, Azure Service Bus cloud messaging, Outbox / Inbox reliability patterns, Terraform infrastructure, and GitHub Actions based image promotion.
+The application accepts source documents from a web client, creates asynchronous conversion jobs, processes them in background workers, streams job status to the browser, and exposes the generated PDF when processing completes.
 
-## Key Features
+## Core Capabilities
 
-- async document-to-PDF jobs with background workers
-- realtime browser updates through SignalR
-- Outbox / Inbox based message reliability and idempotency
-- local development with SQL Server, RabbitMQ, and local file storage
-- Azure runtime model with Container Apps, Azure SQL, Blob Storage, Service Bus, and Key Vault
-- Terraform infrastructure for `testbed` and `prod`
-- CI/CD flow that validates PRs, deploys `testbed`, and promotes validated images to production
+- Asynchronous document-to-PDF jobs with background workers.
+- Realtime browser updates through SignalR.
+- Outbox/Inbox reliability patterns for message publishing and consumption.
+- Local development with SQL Server, RabbitMQ, and local file storage.
+- Azure runtime model with Container Apps, Azure SQL, Blob Storage, Service Bus, Key Vault, and managed identity.
+- Terraform infrastructure for `testbed` and `prod`.
+- CI/CD flow for validation, testbed deployment, and image promotion.
 
-Supported inputs:
-
-- images: `jpg`, `jpeg`, `png`, `bmp`, `gif`, `webp`
-- text: `txt`
-- markdown: `md`
-- html: `html`, `htm`
+Supported inputs: `jpg`, `jpeg`, `png`, `bmp`, `gif`, `webp`, `txt`, `md`, `html`, `htm`.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    Web[React Web] --> Api[ASP.NET Core API]
-    Api --> Db[(SQL)]
-    Api --> Storage[(File Storage)]
-    Api --> Outbox[(Outbox)]
+    Web[React Web] --> API[ASP.NET Core API]
+    API --> DB[(SQL)]
+    API --> Storage[(File / Blob Storage)]
+    API --> Outbox[(Outbox)]
 
     Outbox --> Bus[(RabbitMQ / Service Bus)]
-    Bus --> Worker[Worker]
+    Bus --> Worker[Conversion Worker]
     Bus --> Notification[Notification Service]
     Bus --> Realtime[API Realtime Consumer]
 
-    Worker --> Db
     Worker --> Storage
+    Worker --> DB
     Worker --> Bus
 
     Realtime --> SignalR[SignalR Hub]
@@ -56,7 +51,7 @@ sequenceDiagram
     participant Storage
     participant SignalR
 
-    User->>Web: Upload document
+    User->>Web: Upload source file
     Web->>API: Create conversion job
     API->>Storage: Save source file
     API->>DB: Save Job + OutboxMessage
@@ -72,31 +67,23 @@ sequenceDiagram
     SignalR->>Web: Refresh job status
 ```
 
-## Main Components
-
-- `src/CloudDocumentPipeline.Web` - React client for uploads, job tracking, realtime updates, and PDF downloads
-- `src/CloudDocumentPipeline.Api` - HTTP API, SignalR hub, job queries, result downloads, and health endpoints
-- `src/CloudDocumentPipeline.Worker` - job processing, PDF generation, outbox publishing, retries, and stale recovery
-- `src/CloudDocumentPipeline.NotificationService` - secondary event consumer with inbox-based processing
-- `src/CloudDocumentPipeline.Application` - use cases, contracts, messaging DTOs, and application abstractions
-- `src/CloudDocumentPipeline.Domain` - job state model, inbox and outbox entities, and domain rules
-- `src/CloudDocumentPipeline.Infrastructure` - EF Core persistence, storage providers, messaging providers, and metrics
-
 ## Runtime Model
 
-`Development` uses SQL Server, RabbitMQ, and local file storage.
+| Environment | Infrastructure |
+| --- | --- |
+| Development | SQL Server, RabbitMQ, local file storage |
+| Testbed | Azure Container Apps, Azure SQL, Blob Storage, Service Bus, Key Vault |
+| Production | same provider model as testbed with promoted container images |
 
-`Testbed` and `Production` use Azure Container Apps, Azure SQL, Azure Blob Storage, Azure Service Bus, Key Vault, managed identities, and a one-off migrator job. The same application code switches providers through environment configuration.
+## Run Locally
 
-## Local Run
-
-Start the local dependencies:
+Start dependencies:
 
 ```powershell
 docker compose up -d sqlserver rabbitmq
 ```
 
-Run the services:
+Run services:
 
 ```powershell
 dotnet run --project src/CloudDocumentPipeline.Api
@@ -112,33 +99,35 @@ npm install
 npm run dev
 ```
 
-For a full containerized local stack:
+Full containerized local stack:
 
 ```powershell
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build -d
 ```
 
-## Delivery
+## Project Structure
 
-Pull requests run build and test checks. Pushes to `test` build images, push them to GHCR, run the migrator when needed, and deploy the testbed environment. Production is promoted manually by selecting an image tag that was already validated in testbed.
+```text
+src/CloudDocumentPipeline.Web                  React upload and job tracking UI
+src/CloudDocumentPipeline.Api                  HTTP API, SignalR, health checks, result downloads
+src/CloudDocumentPipeline.Worker               conversion processing, outbox publishing, stale recovery
+src/CloudDocumentPipeline.NotificationService  secondary event consumer with inbox processing
+src/CloudDocumentPipeline.Application          use cases, contracts, messaging DTOs
+src/CloudDocumentPipeline.Domain               job, inbox, and outbox domain model
+src/CloudDocumentPipeline.Infrastructure       EF Core, storage, messaging, metrics
+infra/                                         Terraform environments
+```
 
-Infrastructure changes are handled separately through Terraform validation workflows. Detailed deployment and rollback steps live in the release runbook.
+## Verify
 
-## Observability
+```powershell
+dotnet build CloudDocumentPipeline.sln
+```
 
-The platform includes structured Serilog logs, health endpoints, job lifecycle metrics, and a baseline OpenTelemetry trace setup for API, worker, and notification processing.
-
-Health endpoints:
-
-- `/health`
-- `/health/live`
-- `/health/ready`
-
-## Documentation
+Additional documentation:
 
 - [Architecture](docs/architecture.md)
 - [System Flow](docs/system-flow.md)
-- [State Diagrams](docs/state-diagrams.md)
 - [Release Runbook](docs/release-runbook.md)
-- [CI/CD And Cloud Plan](docs/cicd-cloud-plan.md)
+- [CI/CD and Cloud Plan](docs/cicd-cloud-plan.md)
 - [Terraform Notes](infra/README.md)
