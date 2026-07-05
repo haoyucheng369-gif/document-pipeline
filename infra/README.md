@@ -1,25 +1,25 @@
-# Terraform 鐩綍缁撴瀯
+# Terraform Structure
 
-杩欎釜鐩綍瀛樻斁 `CloudDocumentPipeline` 鐨?Azure 鍩虹璁炬柦浠ｇ爜銆?
+This directory contains the Terraform code for the Azure infrastructure used by `CloudDocumentPipeline`.
 
-## 缁撴瀯璇存槑
+## Layout
 
 - `modules/`
-  - 鍙鐢ㄧ殑 Azure 璧勬簮妯″潡
+  - Reusable Azure resource modules.
 - `environments/testbed/`
-  - testbed 鐜鍏ュ彛
+  - Testbed environment entry point.
 - `environments/prod/`
-  - prod 鐜鍏ュ彛
+  - Production environment entry point.
 
-姣忎釜鐜鐩綍鏈韩閮芥槸涓€涓嫭绔嬬殑 Terraform root module锛屾墍浠ワ細
+Each environment directory is an independent Terraform root module:
 
-- provider 澹版槑鏀惧湪 `environments/*`
-- 鐜鍙橀噺鍜屽懡鍚嶈鍒欎篃鏀惧湪 `environments/*`
-- `main.tf` 鍐嶅幓缁勫悎 `modules/*`
+- Provider configuration lives under `environments/*`.
+- Environment variables and naming rules live under `environments/*`.
+- `main.tf` composes the reusable modules from `modules/*`.
 
-## 褰撳墠妯″潡
+## Modules
 
-褰撳墠宸茬粡鏈夌殑妯″潡锛?
+Current reusable modules:
 
 - `resource-group`
 - `log-analytics`
@@ -31,19 +31,19 @@
 - `container-app`
 - `container-app-job`
 
-## 褰撳墠瑕嗙洊鑼冨洿
+## Covered Resources
 
-### 鍩虹璁炬柦搴曞骇
+### Infrastructure Baseline
 
 - Resource Group
 - Log Analytics Workspace
-- Container Apps Environment
-- Azure SQL Server + Database
-- Storage Account + Blob Container
-- Service Bus Namespace + Topic + Subscriptions
+- Azure Container Apps Environment
+- Azure SQL Server and Database
+- Storage Account and Blob container
+- Service Bus Namespace, Topic, and Subscriptions
 - Key Vault
 
-### 杩愯灞?
+### Runtime Layer
 
 - `api`
 - `web`
@@ -51,21 +51,21 @@
 - `notification`
 - `migrator` job
 
-### 杩愯鏃跺叧閿厤缃?
+### Runtime Configuration
 
 - Managed Identity
 - Key Vault secret references
-- SQL / Blob / Service Bus secret 娉ㄥ叆
-- GHCR 绉佹湁闀滃儚鎷夊彇璁よ瘉
+- SQL, Blob Storage, and Service Bus secret injection
+- GHCR private image pull credentials
 - API probes
-- worker / notification 鍓湰鍙傛暟
-- ingress 缁嗛厤缃?
+- worker and notification replica settings
+- ingress configuration
 - revision mode
-- migrator job timeout / retry / parallelism
+- migrator job timeout, retry, and parallelism settings
 
-## 璋冪敤鏂瑰紡
+## Execution Flow
 
-姣忎釜鐜鐨勬墽琛岄摼鍙互杩戜技鐞嗚В鎴愶細
+Each environment follows this flow:
 
 ```text
 terraform.tfvars
@@ -77,30 +77,27 @@ terraform.tfvars
 -> outputs.tf
 ```
 
-涔熷氨鏄細
+In practice:
 
-- `variables.tf`
-  - 瀹氫箟杈撳叆
-- `terraform.tfvars`
-  - 鎻愪緵鐜瀹為檯鍙傛暟
-- `locals.tf`
-  - 鎷艰鍛藉悕鍜屼腑闂村€?
-- `main.tf`
-  - 璋冪敤妯″潡
-- `outputs.tf`
-  - 鏆撮湶鍏抽敭缁撴灉
+- `variables.tf` defines inputs.
+- `terraform.tfvars` provides environment-specific values.
+- `locals.tf` builds names and shared derived values.
+- `main.tf` calls the reusable modules.
+- `outputs.tf` exposes key deployment results.
 
-## Secret 鍜岄暅鍍忓弬鏁扮害瀹?
+## Secrets And Image Parameters
+
+Local sensitive values and image references should stay outside committed `terraform.tfvars`.
 
 - `terraform.tfvars`
-  - 鍙繚鐣欓潪鏁忔劅鐜鍙傛暟
+  - Non-sensitive environment parameters only.
 - `secrets.auto.tfvars`
-  - 鏀炬湰鍦版晱鎰熷€煎拰闀滃儚鍦板潃
-  - 宸插姞鍏?`.gitignore`
+  - Local sensitive values and image addresses.
+  - Ignored by `.gitignore`.
 - `secrets.auto.tfvars.example`
-  - 鍙綔涓虹ず渚嬫ā鏉匡紝涓嶆彁浜ょ湡瀹炲€?
+  - Example template only. Do not commit real secret values.
 
-甯歌鏈湴鏁忔劅鍙傛暟鍖呮嫭锛?
+Common local sensitive parameters include:
 
 - `sql_administrator_login_password`
 - `sql_connection_string`
@@ -114,22 +111,22 @@ terraform.tfvars
 - `notification_image`
 - `migrator_image`
 
-濡傛灉鍚庣画鎺ュ叆 CI/CD锛屾洿鎺ㄨ崘浣跨敤锛?
+For CI/CD, prefer:
 
-- `TF_VAR_*` 鐜鍙橀噺
+- `TF_VAR_*` environment variables
 - GitHub environment secrets
 
-## 褰撳墠鐘舵€?
+## Current Status
 
-杩欏 Terraform 涓荤嚎宸茬粡瀹屾垚鍒帮細
+The Terraform baseline currently covers:
 
-- 鍩虹璁炬柦缁撴瀯瀹屾暣
-- 杩愯灞傜粨鏋勫畬鏁?
-- 杩愯鏃跺叧閿厤缃熀鏈榻愮幇缃?
+- Infrastructure resource structure.
+- Runtime app and job structure.
+- Core runtime configuration.
 
-褰撳墠鏇村儚鈥滃彲钀藉湴鍓嶇殑鏀跺熬闃舵鈥濓紝杩樺樊鐨勪富瑕佹槸锛?
+Remaining setup work before a real environment rollout:
 
-- 鐪熷疄鍊兼敞鍏?
-- 绗竴娆＄湡瀹?`terraform plan/apply`
-- 鍙€夌殑 remote state backend
-- 鍙€夌殑 infra workflow
+- Inject real environment values.
+- Run the first real `terraform plan` and `terraform apply`.
+- Optionally configure a remote state backend.
+- Optionally add an infrastructure workflow.

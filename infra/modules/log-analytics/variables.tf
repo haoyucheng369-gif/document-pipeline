@@ -1,4 +1,4 @@
-variable "name" {
+﻿variable "name" {
   type = string
 }
 
@@ -11,31 +11,31 @@ variable "resource_group_name" {
 }
 
 variable "sku" {
-  description = "Log Analytics Workspace 使用的计费 SKU。"
+  description = "Configuration value for SKU."
   type        = string
   default     = "PerGB2018"
 }
 
 variable "retention_in_days" {
-  description = "日志默认保留天数。"
+  description = "Log retention period in days."
   type        = number
   default     = 30
 }
 
 variable "daily_quota_gb" {
-  description = "Log Analytics 每日日志配额，GB。-1 表示不限制。"
+  description = "Daily Log Analytics quota in GB. Use -1 for no limit."
   type        = number
   default     = -1
 }
 
 variable "local_authentication_enabled" {
-  description = "是否启用 Log Analytics 本地认证。"
+  description = "Configuration value for local authentication enabled."
   type        = bool
   default     = true
 }
 
 variable "tags" {
-  description = "统一打到资源上的标签。"
+  description = "Tags applied to resources."
   type        = map(string)
   default     = {}
 }

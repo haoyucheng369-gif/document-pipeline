@@ -1,12 +1,11 @@
-using CloudDocumentPipeline.Infrastructure.Persistence;
+﻿using CloudDocumentPipeline.Infrastructure.Persistence;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 
 namespace CloudDocumentPipeline.IntegrationTests;
 
-// 鏈€灏?API 闆嗘垚娴嬭瘯锛?
-// 閲嶇偣楠岃瘉 HTTP 鎺ュ彛銆佹湰鍦版枃浠跺瓨鍌ㄣ€佹暟鎹簱钀藉簱涓夎€呮槸鍚﹁兘涓€璧峰伐浣溿€?
+// Minimal API integration tests for upload, job creation, and local file persistence.
 public sealed class JobsApiIntegrationTests : IClassFixture<CustomWebApplicationFactory>
 {
     private readonly CustomWebApplicationFactory _factory;

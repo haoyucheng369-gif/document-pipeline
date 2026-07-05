@@ -1,4 +1,4 @@
-using CloudDocumentPipeline.Api.Contracts;
+﻿using CloudDocumentPipeline.Api.Contracts;
 using CloudDocumentPipeline.Infrastructure.Messaging;
 using CloudDocumentPipeline.Infrastructure.Storage;
 using Microsoft.AspNetCore.Mvc;
@@ -6,10 +6,9 @@ using System.Data.Common;
 
 namespace CloudDocumentPipeline.Api.Controllers;
 
+// Exposes non-sensitive runtime configuration so the UI can show which backend it is using.
 [ApiController]
 [Route("api/[controller]")]
-// System API 鎺у埗鍣細
-// 缁欏墠绔繑鍥炲綋鍓?API 鎵€鍦ㄧ幆澧冨拰鎵€渚濊禆鍩虹璁炬柦鐨勫畨鍏ㄦ憳瑕侊紝鏂逛究鑱旇皟鏃跺揩閫熺‘璁ゆ暟鎹潵婧愩€?
 public sealed class SystemController : ControllerBase
 {
     private readonly IConfiguration _configuration;
@@ -38,7 +37,7 @@ public sealed class SystemController : ControllerBase
     [HttpGet("environment")]
     public ActionResult<SystemEnvironmentDto> GetEnvironment()
     {
-        // 杩欓噷鍙晠鎰忓彧鏆撮湶鈥滅幆澧冭瘑鍒俊鎭€濓紝涓嶆妸瀹屾暣杩炴帴涓茬洿鎺ヨ繑鍥炵粰鍓嶇銆?
+        // Only expose provider names and environment labels, never raw secret values.
         var (databaseServer, databaseName) = ReadDatabaseTarget(
             _configuration.GetConnectionString("DefaultConnection"));
         var (messagingProvider, messagingTarget) = ReadMessagingTarget();

@@ -1,37 +1,37 @@
-variable "name" {
-  description = "Key Vault 名称。必须全局唯一。"
+﻿variable "name" {
+  description = "Resource name."
   type        = string
 }
 
 variable "resource_group_name" {
-  description = "Key Vault 所属的资源组名称。"
+  description = "Name of the resource group."
   type        = string
 }
 
 variable "location" {
-  description = "Key Vault 部署的 Azure 区域。"
+  description = "Azure region for resources."
   type        = string
 }
 
 variable "tenant_id" {
-  description = "Key Vault 所属租户的 Tenant ID。"
+  description = "Azure tenant ID."
   type        = string
 }
 
 variable "sku_name" {
-  description = "Key Vault SKU。"
+  description = "SKU name."
   type        = string
   default     = "standard"
 }
 
 variable "soft_delete_retention_days" {
-  description = "Key Vault 软删除保留天数。"
+  description = "Configuration value for soft delete retention days."
   type        = number
   default     = 7
 }
 
 variable "tags" {
-  description = "统一资源标签。"
+  description = "Tags applied to resources."
   type        = map(string)
   default     = {}
 }

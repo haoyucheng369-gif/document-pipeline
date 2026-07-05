@@ -1,4 +1,4 @@
-variable "name" {
+﻿variable "name" {
   type = string
 }
 
@@ -11,24 +11,24 @@ variable "resource_group_name" {
 }
 
 variable "log_analytics_workspace_id" {
-  description = "关联的 Log Analytics Workspace 资源 ID。"
+  description = "Resource ID of the Log Analytics workspace."
   type        = string
 }
 
 variable "workload_profile_name" {
-  description = "Container Apps Environment workload profile 名称。未传值时不显式配置。"
+  description = "Container Apps workload profile name."
   type        = string
   default     = null
 }
 
 variable "workload_profile_type" {
-  description = "Container Apps Environment workload profile 类型。"
+  description = "Container Apps workload profile type."
   type        = string
   default     = null
 }
 
 variable "tags" {
-  description = "统一打到资源上的标签。"
+  description = "Tags applied to resources."
   type        = map(string)
   default     = {}
 }

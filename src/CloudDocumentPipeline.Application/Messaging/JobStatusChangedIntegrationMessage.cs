@@ -1,7 +1,6 @@
-namespace CloudDocumentPipeline.Application.Messaging;
+﻿namespace CloudDocumentPipeline.Application.Messaging;
 
-// Job 鐘舵€佸彉鍖栦簨浠讹細
-// 鐢?Worker 鍦ㄤ换鍔℃垚鍔熸垨澶辫触鍚庡彂甯冿紝渚?API 瀹炴椂灞傝闃呭苟杞垚 SignalR 鎺ㄩ€併€?
+// Integration event published by workers after a job reaches a visible status change.
 public sealed class JobStatusChangedIntegrationMessage
 {
     public Guid MessageId { get; set; }

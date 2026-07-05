@@ -1,7 +1,6 @@
-namespace CloudDocumentPipeline.Application.Jobs;
+﻿namespace CloudDocumentPipeline.Application.Jobs;
 
-// DocumentToPdf 浠诲姟杈撳叆锛?
-// 鏁版嵁搴撻噷鍙繚瀛樿緭鍏ユ枃浠剁殑 storage key锛岃€屼笉鏄墿鐞嗙粷瀵硅矾寰勩€?
+// Payload stored on a DocumentToPdf job. It references the uploaded file by storage key.
 public sealed class DocumentToPdfJobPayload
 {
     public string OriginalFileName { get; set; } = default!;

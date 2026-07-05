@@ -1,7 +1,7 @@
-namespace CloudDocumentPipeline.Application.Abstractions.Storage;
+﻿namespace CloudDocumentPipeline.Application.Abstractions.Storage;
 
-// 鏂囦欢瀛樺偍鎶借薄锛?
-// 涓氬姟灞傚彧鍏冲績 storage key锛屼笉鍏冲績搴曞眰鏄湰鍦扮洰褰曘€丯AS 杩樻槸 Azure Blob銆?
+// Provider-neutral file storage abstraction.
+// Callers exchange logical storage keys instead of local paths or Blob URLs.
 public interface IFileStorage
 {
     Task<string> SaveAsync(

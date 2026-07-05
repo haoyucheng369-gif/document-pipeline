@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using CloudDocumentPipeline.Application.Abstractions.Messaging;
 using CloudDocumentPipeline.Application.Abstractions.Observability;
@@ -18,13 +18,7 @@ using Serilog.Context;
 
 namespace CloudDocumentPipeline.Worker;
 
-// Service Bus 鐗堝悗鍙?worker锛?
-// 璐熻矗浠?job-events / worker subscription 娑堣垂 JobCreatedIntegrationMessage锛?
-// 鐒跺悗娌跨敤鐜版湁 Inbox 鍘婚噸銆佸箓绛夈€佸壇浣滅敤鎵ц銆佺姸鎬佹洿鏂拌繖濂椾笟鍔￠€昏緫銆?
-// 褰撳墠鏄€滄渶灏忓彲杩愯鐗堚€濓細
-// - 鍏堜繚璇?Pending -> Processing / Succeeded / Failed 杩欐潯涓婚摼鑳借窇閫?
-// - 閲嶈瘯鍏堢敤 Service Bus 鑷甫鐨?DeliveryCount + DLQ 鏈哄埗
-// - 涓嶅湪杩欓噷涓€娆℃€ч噸鍋?RabbitMQ 鏃朵唬鐨勬墍鏈夐珮绾ч噸璇?鍥為€€绛栫暐
+// Service Bus implementation of the conversion worker used by cloud environments.
 public sealed class ServiceBusWorker : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
@@ -55,8 +49,7 @@ public sealed class ServiceBusWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // 鍒涘缓 Topic Subscription 澶勭悊鍣ㄣ€?
-        // worker 鍙秷璐硅嚜宸遍偅鏉?subscription锛屼笉鍜?notification / api-realtime 娣峰湪涓€璧枫€?
+        // Worker has its own subscription so conversion processing is isolated from realtime and notification consumers.
         _processor = _serviceBusClient.CreateProcessor(
             _settings.TopicName,
             _settings.WorkerSubscriptionName,
@@ -92,11 +85,10 @@ public sealed class ServiceBusWorker : BackgroundService
 
     private async Task ProcessMessageAsync(ProcessMessageEventArgs args)
     {
-        // 褰撳墠 worker 鍙叧蹇?JobCreatedIntegrationMessage銆?
-        // 鍏朵粬娑堟伅绫诲瀷鍏堢洿鎺ュ畬鎴愶紝閬垮厤璇秷璐规帀涓嶅睘浜?worker 鐨勬秷鎭€?
         var messageType = ResolveMessageType(args.Message);
         if (!string.Equals(messageType, nameof(JobCreatedIntegrationMessage), StringComparison.Ordinal))
         {
+            // Ignore event types that are not meant for the conversion worker.
             await args.CompleteMessageAsync(args.Message);
             return;
         }
@@ -113,7 +105,7 @@ public sealed class ServiceBusWorker : BackgroundService
                 using var scope = _scopeFactory.CreateScope();
                 var inboxRepository = scope.ServiceProvider.GetRequiredService<IInboxMessageRepository>();
 
-                // 缁х画娌跨敤鍘熸湁 Inbox claim 鏈哄埗鍋氬箓绛夊拰澶氬疄渚嬫姠鍗犱繚鎶ゃ€?
+                // Keep the same inbox idempotency model as the RabbitMQ worker.
                 var claimed = await inboxRepository.TryClaimAsync(
                     message.MessageId,
                     ConsumerName,
@@ -135,6 +127,7 @@ public sealed class ServiceBusWorker : BackgroundService
                     return;
                 }
 
+                // PDF generation and storage are still provider-neutral application side effects.
                 var resultJson = await ExecuteSideEffectsAsync(message, args.CancellationToken);
 
                 await CompleteMessageAsync(message, resultJson, args.CancellationToken);
@@ -282,10 +275,7 @@ public sealed class ServiceBusWorker : BackgroundService
         var disposition = MessageFailureClassification.Classify(exception);
         var deliveryCount = args.Message.DeliveryCount;
 
-        // Service Bus 鐗堝厛鐢ㄦ渶鐩存帴鐨勫け璐ュ鐞嗭細
-        // - 鍙噸璇曢敊璇細Abandon锛岃 Service Bus 閲嶆柊鎶曢€?
-        // - 涓嶅彲閲嶈瘯鎴栨鏁拌秴闄愶細DeadLetter
-        // 杩欐牱鍏堟妸涓婚摼璺戦€氾紝鍚庨潰鍐嶆寜闇€瑕佸寮烘洿缁嗙殑 backoff 绛栫暐銆?
+        // Service Bus handles retry through abandon/redelivery and terminal failures through DLQ.
         if (disposition == MessageFailureDisposition.Retry && deliveryCount < MaxRetryCount)
         {
             await args.AbandonMessageAsync(args.Message, cancellationToken: args.CancellationToken);
@@ -367,8 +357,7 @@ public sealed class ServiceBusWorker : BackgroundService
         string correlationId,
         CancellationToken cancellationToken)
     {
-        // 鐘舵€佸彉鍖栦簨浠朵粛鐒剁粺涓€璧?IJobMessagePublisher銆?
-        // 杩欐牱褰?provider=ServiceBus 鏃讹紝worker 鍙戝嚭鐨勫悗缁姸鎬佹秷鎭篃浼氱户缁繘鍏?Service Bus銆?
+        // Status changes return to the configured broker so API realtime consumers can broadcast them.
         using var scope = _scopeFactory.CreateScope();
         var publisher = scope.ServiceProvider.GetRequiredService<IJobMessagePublisher>();
 

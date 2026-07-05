@@ -1,96 +1,96 @@
-variable "name" {
-  description = "Container App 名称。"
+﻿variable "name" {
+  description = "Resource name."
   type        = string
 }
 
 variable "resource_group_name" {
-  description = "Container App 所属的资源组名称。"
+  description = "Name of the resource group."
   type        = string
 }
 
 variable "container_app_environment_id" {
-  description = "Container Apps Environment 资源 ID。"
+  description = "Resource ID of the Azure Container Apps environment."
   type        = string
 }
 
 variable "revision_mode" {
-  description = "Revision 模式。默认单 revision。"
+  description = "Container App revision mode."
   type        = string
   default     = "Single"
 }
 
 variable "external_ingress_enabled" {
-  description = "是否启用外部 ingress。"
+  description = "Configuration value for external ingress enabled."
   type        = bool
   default     = false
 }
 
 variable "allow_insecure_connections" {
-  description = "是否允许不安全的 HTTP 连接。"
+  description = "Whether insecure HTTP connections are allowed."
   type        = bool
   default     = false
 }
 
 variable "target_port" {
-  description = "应用对外监听端口。未启用 ingress 时可为 null。"
+  description = "Application port exposed by ingress."
   type        = number
   default     = null
 }
 
 variable "transport" {
-  description = "Ingress transport。"
+  description = "Ingress transport mode."
   type        = string
   default     = "auto"
 }
 
 variable "container_name" {
-  description = "容器名称。"
+  description = "Container name."
   type        = string
 }
 
 variable "image" {
-  description = "容器镜像地址。"
+  description = "Container image reference."
   type        = string
 }
 
 variable "cpu" {
-  description = "容器 CPU 配额。"
+  description = "Container CPU allocation."
   type        = number
   default     = 0.5
 }
 
 variable "memory" {
-  description = "容器内存配额，Azure Container Apps 使用字符串格式，例如 1Gi。"
+  description = "Container memory allocation."
   type        = string
   default     = "1Gi"
 }
 
 variable "min_replicas" {
-  description = "最小副本数。"
+  description = "Minimum replica count."
   type        = number
   default     = 1
 }
 
 variable "max_replicas" {
-  description = "最大副本数。"
+  description = "Maximum replica count."
   type        = number
   default     = 1
 }
 
 variable "env_vars" {
-  description = "非敏感环境变量。"
+  description = "Configuration value for env vars."
   type        = map(string)
   default     = {}
 }
 
 variable "secret_env_vars" {
-  description = "使用 secretref 的环境变量，key 是 env 名称，value 是 secret 名称。"
+  description = "Configuration value for secret env vars."
   type        = map(string)
   default     = {}
 }
 
 variable "env_entries" {
-  description = "按顺序声明的环境变量列表，用于和现网对齐 env 顺序。"
+  description = "Configuration value for env entries."
   type = list(object({
     name        = string
     value       = optional(string)
@@ -100,38 +100,38 @@ variable "env_entries" {
 }
 
 variable "key_vault_secret_refs" {
-  description = "Container App 内部的 Key Vault secret 引用，key 是 secret 名称，value 是 Key Vault Secret ID。"
+  description = "Key Vault secret references used by the app."
   type        = map(string)
   default     = {}
 }
 
 variable "enable_system_assigned_identity" {
-  description = "是否启用 SystemAssigned Managed Identity。"
+  description = "Whether to enable a system-assigned managed identity."
   type        = bool
   default     = false
 }
 
 variable "registry_server" {
-  description = "私有镜像仓库地址。"
+  description = "Private container registry server."
   type        = string
   default     = "ghcr.io"
 }
 
 variable "registry_username" {
-  description = "私有镜像仓库用户名。未传值时表示不配置镜像仓库认证。"
+  description = "Private container registry username."
   type        = string
   default     = null
 }
 
 variable "registry_password" {
-  description = "私有镜像仓库密码或 token。"
+  description = "Private container registry password or token."
   type        = string
   default     = null
   sensitive   = true
 }
 
 variable "liveness_probe" {
-  description = "容器 liveness probe 配置。未传值时不配置。"
+  description = "Optional liveness probe configuration."
   type = object({
     transport               = string
     port                    = number
@@ -145,7 +145,7 @@ variable "liveness_probe" {
 }
 
 variable "readiness_probe" {
-  description = "容器 readiness probe 配置。未传值时不配置。"
+  description = "Optional readiness probe configuration."
   type = object({
     transport               = string
     port                    = number
@@ -160,7 +160,7 @@ variable "readiness_probe" {
 }
 
 variable "startup_probe" {
-  description = "容器 startup probe 配置。未传值时不配置。"
+  description = "Optional startup probe configuration."
   type = object({
     transport               = string
     port                    = number
@@ -175,7 +175,7 @@ variable "startup_probe" {
 }
 
 variable "tags" {
-  description = "统一资源标签。"
+  description = "Tags applied to resources."
   type        = map(string)
   default     = {}
 }

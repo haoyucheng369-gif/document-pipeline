@@ -1,4 +1,4 @@
-using CloudDocumentPipeline.Infrastructure;
+﻿using CloudDocumentPipeline.Infrastructure;
 using CloudDocumentPipeline.Infrastructure.Messaging;
 using CloudDocumentPipeline.NotificationService;
 using Microsoft.Extensions.Hosting;
@@ -8,9 +8,7 @@ using Serilog;
 using Serilog.Formatting.Compact;
 using CloudDocumentPipeline.Application.Abstractions.Observability;
 
-// NotificationService 鍏ュ彛锛?
-// 瀹冩槸鐙珛娑堣垂鑰咃紝鍙礋璐ｈ闃呴€氱煡绫讳簨浠跺苟鎵ц閫氱煡鍓綔鐢ㄣ€?
-// 褰撳墠寮€濮嬫敮鎸佹寜 Messaging.Provider 鍦?RabbitMQ 鍜?Service Bus 涔嬮棿鍒囨崲銆?
+// NotificationService is an independent event consumer for secondary job side effects.
 var loggerConfiguration = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .WriteTo.File(
@@ -47,7 +45,7 @@ builder.Services
         }
     });
 
-// 澶嶇敤鍚屼竴濂?Infrastructure锛屽啀琛ュ厖閫氱煡鍙戦€佸櫒銆?
+// Reuse the same infrastructure bindings as API and worker, then add notification-specific services.
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<NotificationEmailSender>();
 

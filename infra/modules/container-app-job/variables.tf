@@ -1,65 +1,65 @@
-variable "name" {
-  description = "Container App Job 名称。"
+﻿variable "name" {
+  description = "Resource name."
   type        = string
 }
 
 variable "resource_group_name" {
-  description = "Container App Job 所属的资源组名称。"
+  description = "Name of the resource group."
   type        = string
 }
 
 variable "location" {
-  description = "Container App Job 部署的 Azure 区域。"
+  description = "Azure region for resources."
   type        = string
 }
 
 variable "container_app_environment_id" {
-  description = "Container Apps Environment 资源 ID。"
+  description = "Resource ID of the Azure Container Apps environment."
   type        = string
 }
 
 variable "trigger_type" {
-  description = "Job 触发类型。当前先使用 Manual。"
+  description = "Container App Job trigger type."
   type        = string
   default     = "Manual"
 }
 
 variable "container_name" {
-  description = "Job 内部容器名称。"
+  description = "Container name."
   type        = string
 }
 
 variable "image" {
-  description = "Job 使用的镜像地址。"
+  description = "Container image reference."
   type        = string
 }
 
 variable "cpu" {
-  description = "Job 容器 CPU 配额。"
+  description = "Container CPU allocation."
   type        = number
   default     = 0.5
 }
 
 variable "memory" {
-  description = "Job 容器内存配额。"
+  description = "Container memory allocation."
   type        = string
   default     = "1Gi"
 }
 
 variable "env_vars" {
-  description = "Job 使用的非敏感环境变量。"
+  description = "Configuration value for env vars."
   type        = map(string)
   default     = {}
 }
 
 variable "secret_env_vars" {
-  description = "Job 使用 secretref 的环境变量，key 是 env 名称，value 是 secret 名称。"
+  description = "Configuration value for secret env vars."
   type        = map(string)
   default     = {}
 }
 
 variable "env_entries" {
-  description = "按顺序声明的 Job 环境变量列表，用于和现网对齐 env 顺序。"
+  description = "Configuration value for env entries."
   type = list(object({
     name        = string
     value       = optional(string)
@@ -69,56 +69,56 @@ variable "env_entries" {
 }
 
 variable "key_vault_secret_refs" {
-  description = "Job 内部的 Key Vault secret 引用，key 是 secret 名称，value 是 Key Vault Secret ID。"
+  description = "Key Vault secret references used by the app."
   type        = map(string)
   default     = {}
 }
 
 variable "enable_system_assigned_identity" {
-  description = "是否启用 SystemAssigned Managed Identity。"
+  description = "Whether to enable a system-assigned managed identity."
   type        = bool
   default     = false
 }
 
 variable "registry_server" {
-  description = "私有镜像仓库地址。"
+  description = "Private container registry server."
   type        = string
   default     = "ghcr.io"
 }
 
 variable "registry_username" {
-  description = "私有镜像仓库用户名。未传值时表示不配置镜像仓库认证。"
+  description = "Private container registry username."
   type        = string
   default     = null
 }
 
 variable "registry_password" {
-  description = "私有镜像仓库密码或 token。"
+  description = "Private container registry password or token."
   type        = string
   default     = null
   sensitive   = true
 }
 
 variable "parallelism" {
-  description = "并行执行数。"
+  description = "Container App Job parallelism."
   type        = number
   default     = 1
 }
 
 variable "replica_timeout_in_seconds" {
-  description = "单次执行超时时间。"
+  description = "Container App Job execution timeout in seconds."
   type        = number
   default     = 1800
 }
 
 variable "replica_retry_limit" {
-  description = "单次执行失败后的重试次数。"
+  description = "Container App Job retry limit."
   type        = number
   default     = 0
 }
 
 variable "tags" {
-  description = "统一资源标签。"
+  description = "Tags applied to resources."
   type        = map(string)
   default     = {}
 }

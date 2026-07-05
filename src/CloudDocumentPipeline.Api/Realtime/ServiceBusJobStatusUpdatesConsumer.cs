@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using CloudDocumentPipeline.Application.Messaging;
 using CloudDocumentPipeline.Infrastructure.Messaging;
@@ -6,9 +6,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace CloudDocumentPipeline.Api.Realtime;
 
-// Service Bus 鐗堢姸鎬佹洿鏂版秷璐硅€咃細
-// 浠?job-events / api-realtime subscription 璇诲彇 JobStatusChangedIntegrationMessage锛?
-// 鍐嶆妸鐘舵€佸彉鍖栬浆鎴愬墠绔彲璁㈤槄鐨?SignalR jobUpdated 浜嬩欢銆?
+// Service Bus-backed realtime bridge from the api-realtime subscription to SignalR clients.
 public sealed class ServiceBusJobStatusUpdatesConsumer : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
@@ -34,6 +32,7 @@ public sealed class ServiceBusJobStatusUpdatesConsumer : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // The API has its own subscription so realtime fan-out is isolated from worker processing.
         _processor = _serviceBusClient.CreateProcessor(
             _settings.TopicName,
             _settings.ApiRealtimeSubscriptionName,
@@ -72,6 +71,7 @@ public sealed class ServiceBusJobStatusUpdatesConsumer : BackgroundService
         var messageType = ResolveMessageType(args.Message);
         if (!string.Equals(messageType, nameof(JobStatusChangedIntegrationMessage), StringComparison.Ordinal))
         {
+            // Ignore unrelated event types on this subscription rather than poison the processor.
             await args.CompleteMessageAsync(args.Message);
             return;
         }
@@ -80,6 +80,7 @@ public sealed class ServiceBusJobStatusUpdatesConsumer : BackgroundService
 
         try
         {
+            // Convert the broker event into the compact SignalR payload expected by the UI.
             var message = JsonSerializer.Deserialize<JobStatusChangedIntegrationMessage>(json, JsonSerializerOptions)
                 ?? throw new InvalidOperationException("Status change message deserialization failed.");
 
@@ -97,6 +98,7 @@ public sealed class ServiceBusJobStatusUpdatesConsumer : BackgroundService
         }
         catch (Exception exception)
         {
+            // Service Bus keeps bad realtime messages in DLQ for later inspection.
             _logger.LogError(exception, "Failed to process Service Bus job status update message: {Message}", json);
             await args.DeadLetterMessageAsync(
                 args.Message,

@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using CloudDocumentPipeline.Application.Abstractions.Persistence;
 using CloudDocumentPipeline.Application.Messaging;
@@ -13,11 +13,11 @@ using Serilog.Context;
 
 namespace CloudDocumentPipeline.NotificationService;
 
+// RabbitMQ notification consumer. It represents secondary side effects triggered by job events.
 public sealed class NotificationWorker : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
-    // Notification consumer 鍜?Job consumer 澶勭悊鐨勬槸鍚屼竴鏉′簨浠讹紝
-    // 浣?Inbox 鍘婚噸蹇呴』鎸夋秷璐硅€呭尯鍒嗭紝鎵€浠ヨ繖閲岃鏈夌嫭绔嬬殑 ConsumerName銆?
+    // Notification processing has a separate inbox identity from the job worker.
     private const string ConsumerName = "CloudDocumentPipeline.NotificationConsumer";
 
     private readonly IServiceScopeFactory _scopeFactory;
@@ -45,12 +45,11 @@ public sealed class NotificationWorker : BackgroundService
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
-        // Notification service 鍙闃呴€氱煡鐩稿叧闃熷垪锛屼笉璐熻矗 retry / DLQ 缂栨帓銆?
         _connection = _connectionProvider.GetConnection();
         _channel = _connection.CreateModel();
         _topologyInitializer.EnsureTopology(_channel);
 
-        // 鎺у埗骞跺彂鎶撳彇閲忥紝閬垮厤涓€娆″湪鏈湴绉帇澶鏈‘璁ゆ秷鎭€?
+        // Keep notification throughput bounded so it cannot starve the database.
         _channel.BasicQos(prefetchSize: 0, prefetchCount: 10, global: false);
 
         _logger.LogInformation("Notification worker connected. Queue: {QueueName}", _settings.NotificationQueueName);
@@ -67,12 +66,12 @@ public sealed class NotificationWorker : BackgroundService
 
         consumer.Received += async (_, eventArgs) =>
         {
-            // 鍘熷娑堟伅鍏堣繕鍘熸垚 JSON锛屽啀鍙嶅簭鍒楀寲鎴愬绾﹀璞°€?
             var body = eventArgs.Body.ToArray();
             var json = Encoding.UTF8.GetString(body);
 
             try
             {
+                // Notification currently listens to job-created events and simulates delivery.
                 var message = JsonSerializer.Deserialize<JobCreatedIntegrationMessage>(json, JsonSerializerOptions)
                     ?? throw new InvalidOperationException("Notification message deserialization failed.");
 
@@ -82,7 +81,7 @@ public sealed class NotificationWorker : BackgroundService
                     var inboxRepository = scope.ServiceProvider.GetRequiredService<IInboxMessageRepository>();
                     var sender = scope.ServiceProvider.GetRequiredService<NotificationEmailSender>();
 
-                    // 閫氱煡娑堟伅鍚屾牱鍏?claim锛岄伩鍏嶉噸澶嶅彂閫侀€氱煡銆?
+                    // Claim first so duplicate broker deliveries do not send duplicate notifications.
                     var claimed = await inboxRepository.TryClaimAsync(
                         message.MessageId,
                         ConsumerName,
@@ -99,10 +98,10 @@ public sealed class NotificationWorker : BackgroundService
                     var inbox = await inboxRepository.GetByMessageIdAsync(message.MessageId, ConsumerName, stoppingToken)
                         ?? throw new InvalidOperationException($"Inbox claim for notification message '{message.MessageId}' was not found.");
 
-                    // 褰撳墠瀹炵幇鏄ā鎷熷彂閭欢锛屽悗缁彲浠ユ浛鎹㈡垚鐪熷疄閭欢鏈嶅姟鎴?webhook銆?
+                    // Replace this sender with a real provider integration when email delivery is enabled.
                     await sender.SendAsync(message, stoppingToken);
 
-                    // 閫氱煡鎴愬姛鍚庤ˉ榻?Inbox 鏈€缁堢姸鎬併€?
+                    // Complete the inbox after the side effect finishes.
                     inbox.MarkProcessed();
                     await inboxRepository.SaveChangesAsync(stoppingToken);
 
@@ -112,6 +111,7 @@ public sealed class NotificationWorker : BackgroundService
             }
             catch (Exception ex)
             {
+                // Notification failures are logged and acknowledged so they do not block core conversion.
                 _logger.LogError(ex, "Error while processing notification message.");
                 _channel.BasicAck(eventArgs.DeliveryTag, false);
             }
@@ -128,7 +128,7 @@ public sealed class NotificationWorker : BackgroundService
 
     public override void Dispose()
     {
-        // 杩欓噷鍙噴鏀惧綋鍓?channel锛岄暱杩炴帴鐢?ConnectionProvider 缁熶竴绠＄悊銆?
+        // The shared connection provider owns the connection; this service owns only its channel.
         _channel?.Close();
         _channel?.Dispose();
         base.Dispose();

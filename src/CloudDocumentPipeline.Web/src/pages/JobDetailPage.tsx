@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+﻿import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { StatusBadge } from "../components/StatusBadge";
@@ -7,9 +7,7 @@ import { formatDate } from "../lib/format";
 import { downloadResultFile, getJob, retryJob } from "../lib/api";
 import { subscribeToJobUpdates } from "../lib/signalr";
 
-// 任务详情页：
-// 详情数据仍然由 TanStack Query 管理，但刷新时机由 SignalR 驱动。
-// 当前页只关心当前 job 的状态变化，收到对应 jobUpdated 后再刷新详情和列表缓存。
+// Job detail page. It refreshes only when the current job receives a realtime update.
 export function JobDetailPage() {
   const { id = "" } = useParams();
   const queryClient = useQueryClient();
@@ -21,11 +19,10 @@ export function JobDetailPage() {
     queryFn: () => getJob(id)
   });
 
-  // 当前这个 job 状态变化时，刷新详情和列表缓存。
-  // 同样加一个轻量防抖，避免短时间连续事件导致重复 GET。
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
+    // Ignore updates for other jobs and debounce refreshes for the current one.
     void subscribeToJobUpdates(async (payload) => {
       if (payload.jobId !== id) {
         return;
@@ -77,6 +74,7 @@ export function JobDetailPage() {
   const downloadMutation = useMutation({
     mutationFn: () => downloadResultFile(id),
     onSuccess: ({ blob, fileName }) => {
+      // Use a temporary object URL so the browser downloads the API response as a file.
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;

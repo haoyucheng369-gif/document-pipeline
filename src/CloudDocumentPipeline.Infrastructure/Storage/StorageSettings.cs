@@ -1,8 +1,6 @@
-namespace CloudDocumentPipeline.Infrastructure.Storage;
+﻿namespace CloudDocumentPipeline.Infrastructure.Storage;
 
-// 瀛樺偍閰嶇疆锛?
-// 褰撳墠榛樿浣跨敤 Local锛屽叡浜洰褰曢€傚悎鏈湴鑱旇皟锛?
-// 鍚庣画涓婁簯鏃跺彲浠ユ妸 Provider 鍒囧埌 AzureBlob銆?
+// Storage provider settings. Development uses Local; cloud environments use AzureBlob.
 public sealed class StorageSettings
 {
     public const string SectionName = "Storage";

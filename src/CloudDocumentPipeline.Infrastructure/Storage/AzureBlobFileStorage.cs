@@ -1,12 +1,11 @@
-using Azure.Storage.Blobs;
+﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using CloudDocumentPipeline.Application.Abstractions.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace CloudDocumentPipeline.Infrastructure.Storage;
 
-// Azure Blob 瀛樺偍瀹炵幇锛?
-// 鍜屾湰鍦板疄鐜颁繚鎸佸悓鏍风殑 storage key 璇箟锛屽悗缁垏浜戠鍙敼 Provider 鍜岄厤缃€?
+// Azure Blob implementation used by testbed and production runtimes.
 public sealed class AzureBlobFileStorage : IFileStorage
 {
     private readonly BlobContainerClient _containerClient;
@@ -26,6 +25,7 @@ public sealed class AzureBlobFileStorage : IFileStorage
             throw new InvalidOperationException("Storage:AzureBlob:ContainerName is required when Provider is AzureBlob.");
         }
 
+        // The container is private; downloads are served through the API after job authorization checks.
         _containerClient = new BlobContainerClient(
             settings.AzureBlob.ConnectionString,
             settings.AzureBlob.ContainerName);
@@ -39,6 +39,7 @@ public sealed class AzureBlobFileStorage : IFileStorage
         byte[] content,
         CancellationToken cancellationToken = default)
     {
+        // Use the same logical key shape as local storage so the application stays provider-neutral.
         var storageKey = BuildStorageKey(category, fileName);
         var blobClient = _containerClient.GetBlobClient(storageKey);
 
@@ -67,6 +68,7 @@ public sealed class AzureBlobFileStorage : IFileStorage
     {
         var extension = Path.GetExtension(fileName);
         var baseName = Path.GetFileNameWithoutExtension(fileName);
+        // Add a unique suffix so uploads with the same original name do not overwrite each other.
         var safeFileName = $"{baseName}-{Guid.NewGuid():N}{extension}";
 
         return string.Join('/',

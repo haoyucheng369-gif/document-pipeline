@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { StatusBadge } from "../components/StatusBadge";
@@ -12,9 +12,7 @@ type JobsPageLocationState = {
   createdJobCount?: number;
 };
 
-// 任务列表页：
-// 列表数据由 TanStack Query 管理，实时更新由 SignalR 事件触发。
-// 当前实现不是固定轮询，而是收到 jobUpdated 后再让列表缓存失效并重新拉取。
+// Job list page. TanStack Query owns server state; SignalR decides when to refresh it.
 export function JobsPage() {
   const jobsQuery = useQuery({
     queryKey: ["jobs"],
@@ -28,8 +26,8 @@ export function JobsPage() {
   const hasShownCreatedToastRef = useRef(false);
   const refreshTimerRef = useRef<number | null>(null);
 
-  // 批量创建任务后，在列表页统一弹一次成功提示。
   useEffect(() => {
+    // Show the multi-create success toast once after navigation from the create page.
     if (!locationState?.createdJobCount) {
       hasShownCreatedToastRef.current = false;
       return;
@@ -53,12 +51,10 @@ export function JobsPage() {
     });
   }, [location.pathname, locationState?.createdJobCount, navigate, showToast]);
 
-  // 订阅后端推送的 Job 状态变化事件。
-  // SignalR 可能在短时间内推多条事件，这里做一次轻量防抖，
-  // 避免列表因为连续状态变化而瞬间发太多次 GET。
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
+    // Debounce realtime refreshes so quick status bursts do not trigger many GET requests.
     void subscribeToJobUpdates(async () => {
       if (refreshTimerRef.current !== null) {
         window.clearTimeout(refreshTimerRef.current);

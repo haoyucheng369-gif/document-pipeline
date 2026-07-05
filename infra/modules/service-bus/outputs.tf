@@ -1,29 +1,29 @@
-output "namespace_name" {
-  description = "Service Bus Namespace 名称。"
+﻿output "namespace_name" {
+  description = "Output value for namespace name."
   value       = azurerm_servicebus_namespace.this.name
 }
 
 output "namespace_id" {
-  description = "Service Bus Namespace 资源 ID。"
+  description = "Output value for namespace ID."
   value       = azurerm_servicebus_namespace.this.id
 }
 
 output "topic_name" {
-  description = "Service Bus Topic 名称。"
+  description = "Service Bus topic name used for business events."
   value       = azurerm_servicebus_topic.job_events.name
 }
 
 output "worker_subscription_name" {
-  description = "worker subscription 名称。"
+  description = "Service Bus subscription name used by the worker."
   value       = azurerm_servicebus_subscription.worker.name
 }
 
 output "notification_subscription_name" {
-  description = "notification subscription 名称。"
+  description = "Service Bus subscription name used by the notification service."
   value       = azurerm_servicebus_subscription.notification.name
 }
 
 output "api_realtime_subscription_name" {
-  description = "api realtime subscription 名称。"
+  description = "Service Bus subscription name used by API realtime updates."
   value       = azurerm_servicebus_subscription.api_realtime.name
 }

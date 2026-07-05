@@ -1,287 +1,287 @@
-variable "location" {
-  description = "prod 环境使用的 Azure 区域。"
+﻿variable "location" {
+  description = "Azure region for prod resources."
   type        = string
   default     = "francecentral"
 }
 
 variable "project_name" {
-  description = "命名规则里使用的项目短前缀。"
+  description = "Configuration value for project name."
   type        = string
   default     = "docflow"
 }
 
 variable "sql_administrator_login" {
-  description = "prod Azure SQL Server 的管理员用户名。"
+  description = "Configuration value for SQL administrator login."
   type        = string
   default     = "docflowadmin"
 }
 
 variable "sql_administrator_login_password" {
-  description = "prod Azure SQL Server 的管理员密码。"
+  description = "Configuration value for SQL administrator login password."
   type        = string
   sensitive   = true
 }
 
 variable "sql_connection_string" {
-  description = "prod 运行时使用的 SQL 连接字符串。"
+  description = "SQL connection string used by the prod runtime."
   type        = string
   sensitive   = true
 }
 
 variable "blob_connection_string" {
-  description = "prod 运行时使用的 Blob connection string。"
+  description = "Blob Storage connection string used by the prod runtime."
   type        = string
   sensitive   = true
 }
 
 variable "service_bus_connection_string" {
-  description = "prod 运行时使用的 Service Bus connection string。"
+  description = "Service Bus connection string used by the prod runtime."
   type        = string
   sensitive   = true
 }
 
 variable "sql_sku_name" {
-  description = "prod Azure SQL Database 使用的 SKU。"
+  description = "Configuration value for SQL SKU name."
   type        = string
   default     = "Basic"
 }
 
 variable "sql_storage_account_type" {
-  description = "prod Azure SQL Database 备份存储冗余类型。"
+  description = "Configuration value for SQL storage account type."
   type        = string
   default     = "Geo"
 }
 
 variable "storage_account_tier" {
-  description = "prod Storage Account 性能层。"
+  description = "Configuration value for storage account tier."
   type        = string
   default     = "Standard"
 }
 
 variable "storage_account_replication_type" {
-  description = "prod Storage Account 副本类型。"
+  description = "Configuration value for storage account replication type."
   type        = string
   default     = "LRS"
 }
 
 variable "storage_allow_nested_items_to_be_public" {
-  description = "prod 是否允许存储账户中的嵌套项公开访问。"
+  description = "Configuration value for storage allow nested items to be public."
   type        = bool
   default     = true
 }
 
 variable "service_bus_sku" {
-  description = "prod Service Bus Namespace 使用的 SKU。"
+  description = "Configuration value for service bus SKU."
   type        = string
   default     = "Standard"
 }
 
 variable "service_bus_max_delivery_count" {
-  description = "prod Service Bus subscription 的最大投递次数。"
+  description = "Configuration value for service bus max delivery count."
   type        = number
   default     = 10
 }
 
 variable "service_bus_topic_default_message_ttl" {
-  description = "prod Service Bus topic 默认 TTL。"
+  description = "Configuration value for service bus topic default message TTL."
   type        = string
   default     = "P10675199DT2H48M5.4775807S"
 }
 
 variable "service_bus_topic_enable_batched_operations" {
-  description = "prod Service Bus topic 是否启用 batched operations。"
+  description = "Configuration value for service bus topic enable batched operations."
   type        = bool
   default     = false
 }
 
 variable "service_bus_subscription_default_message_ttl" {
-  description = "prod Service Bus subscription 默认 TTL。"
+  description = "Configuration value for service bus subscription default message TTL."
   type        = string
   default     = "P10675199DT2H48M5.4775807S"
 }
 
 variable "service_bus_subscription_auto_delete_on_idle" {
-  description = "prod Service Bus subscription 自动删除闲置时间。"
+  description = "Configuration value for service bus subscription auto delete on idle."
   type        = string
   default     = "P10675199DT2H48M5.4775807S"
 }
 
 variable "service_bus_subscription_enable_batched_operations" {
-  description = "prod Service Bus subscription 是否启用 batched operations。"
+  description = "Configuration value for service bus subscription enable batched operations."
   type        = bool
   default     = false
 }
 
 variable "service_bus_subscription_dead_lettering_on_filter_evaluation_error" {
-  description = "prod Service Bus subscription 过滤规则评估错误时是否死信。"
+  description = "Configuration value for service bus subscription dead lettering on filter evaluation error."
   type        = bool
   default     = true
 }
 
 variable "key_vault_sku_name" {
-  description = "prod Key Vault 使用的 SKU。"
+  description = "Configuration value for key vault SKU name."
   type        = string
   default     = "standard"
 }
 
 variable "key_vault_soft_delete_retention_days" {
-  description = "prod Key Vault 软删除保留天数。"
+  description = "Configuration value for key vault soft delete retention days."
   type        = number
   default     = 7
 }
 
 variable "log_analytics_daily_quota_gb" {
-  description = "prod Log Analytics 每日日志配额，GB。"
+  description = "Configuration value for log analytics daily quota gb."
   type        = number
   default     = -1
 }
 
 variable "log_analytics_local_authentication_enabled" {
-  description = "prod Log Analytics 是否启用本地认证。"
+  description = "Configuration value for log analytics local authentication enabled."
   type        = bool
   default     = true
 }
 
 variable "container_app_environment_workload_profile_name" {
-  description = "prod Container Apps Environment workload profile 名称。"
+  description = "Configuration value for container app environment workload profile name."
   type        = string
   default     = null
 }
 
 variable "container_app_environment_workload_profile_type" {
-  description = "prod Container Apps Environment workload profile 类型。"
+  description = "Configuration value for container app environment workload profile type."
   type        = string
   default     = null
 }
 
 variable "ghcr_registry_server" {
-  description = "prod 私有镜像仓库地址。"
+  description = "Configuration value for GHCR registry server."
   type        = string
   default     = "ghcr.io"
 }
 
 variable "ghcr_registry_username" {
-  description = "prod GHCR 拉取镜像使用的用户名。"
+  description = "Configuration value for GHCR registry username."
   type        = string
 }
 
 variable "ghcr_registry_password" {
-  description = "prod GHCR 拉取镜像使用的密码或 token。"
+  description = "Configuration value for GHCR registry password."
   type        = string
   sensitive   = true
 }
 
 variable "api_revision_mode" {
-  description = "prod API 的 revision 模式。"
+  description = "Configuration value for API revision mode."
   type        = string
   default     = "Single"
 }
 
 variable "api_allow_insecure_connections" {
-  description = "prod API 是否允许不安全的 HTTP 连接。"
+  description = "Configuration value for API allow insecure connections."
   type        = bool
   default     = false
 }
 
 variable "api_ingress_transport" {
-  description = "prod API ingress transport。"
+  description = "Configuration value for API ingress transport."
   type        = string
   default     = "auto"
 }
 
 variable "api_min_replicas" {
-  description = "prod API 最小副本数。"
+  description = "Configuration value for API min replicas."
   type        = number
   default     = 1
 }
 
 variable "api_max_replicas" {
-  description = "prod API 最大副本数。"
+  description = "Configuration value for API max replicas."
   type        = number
   default     = 1
 }
 
 variable "web_min_replicas" {
-  description = "prod Web 最小副本数。"
+  description = "Configuration value for web min replicas."
   type        = number
   default     = 1
 }
 
 variable "web_max_replicas" {
-  description = "prod Web 最大副本数。"
+  description = "Configuration value for web max replicas."
   type        = number
   default     = 1
 }
 
 variable "worker_min_replicas" {
-  description = "prod Worker 最小副本数。"
+  description = "Configuration value for worker min replicas."
   type        = number
   default     = 1
 }
 
 variable "worker_max_replicas" {
-  description = "prod Worker 最大副本数。"
+  description = "Configuration value for worker max replicas."
   type        = number
   default     = 1
 }
 
 variable "notification_min_replicas" {
-  description = "prod NotificationService 最小副本数。"
+  description = "Configuration value for notification min replicas."
   type        = number
   default     = 1
 }
 
 variable "notification_max_replicas" {
-  description = "prod NotificationService 最大副本数。"
+  description = "Configuration value for notification max replicas."
   type        = number
   default     = 1
 }
 
 variable "migrator_parallelism" {
-  description = "prod Migrator Job 并行执行数。"
+  description = "Configuration value for migrator parallelism."
   type        = number
   default     = 1
 }
 
 variable "migrator_replica_timeout_in_seconds" {
-  description = "prod Migrator Job 单次执行超时时间。"
+  description = "Configuration value for migrator replica timeout in seconds."
   type        = number
   default     = 1800
 }
 
 variable "migrator_replica_retry_limit" {
-  description = "prod Migrator Job 单次执行失败后的重试次数。"
+  description = "Configuration value for migrator replica retry limit."
   type        = number
   default     = 0
 }
 
 variable "api_image" {
-  description = "prod API 使用的镜像地址。"
+  description = "Configuration value for API image."
   type        = string
 }
 
 variable "web_image" {
-  description = "prod Web 使用的镜像地址。"
+  description = "Configuration value for web image."
   type        = string
 }
 
 variable "web_runtime_api_base_url" {
-  description = "prod Web 运行时访问 API 的基础地址。"
+  description = "Configuration value for web runtime API base url."
   type        = string
   default     = "https://api.prod.example.com"
 }
 
 variable "worker_image" {
-  description = "prod Worker 使用的镜像地址。"
+  description = "Configuration value for worker image."
   type        = string
 }
 
 variable "notification_image" {
-  description = "prod NotificationService 使用的镜像地址。"
+  description = "Configuration value for notification image."
   type        = string
 }
 
 variable "migrator_image" {
-  description = "prod Migrator Job 使用的镜像地址。"
+  description = "Configuration value for migrator image."
   type        = string
 }

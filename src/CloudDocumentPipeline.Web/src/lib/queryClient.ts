@@ -1,8 +1,6 @@
-import { QueryClient } from "@tanstack/react-query";
+﻿import { QueryClient } from "@tanstack/react-query";
 
-// QueryClient：
-// 统一管理前端的服务端数据缓存、请求重试和刷新策略。
-// 当前这个项目主要用它来管理任务列表、任务详情和重试后的缓存失效。
+// Shared client for server state, cache invalidation, and retry behavior.
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

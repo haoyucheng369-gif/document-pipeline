@@ -1,4 +1,4 @@
-import { zodResolver } from "@hookform/resolvers/zod";
+﻿import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -15,9 +15,8 @@ const createJobSchema = z.object({
 
 type CreateJobFormValues = z.infer<typeof createJobSchema>;
 
-// 创建任务页：
-// 统一把拖拽和点击选择都收敛到 File[]，避免 FileList 在不同交互路径下表现不一致。
-// 后端当前仍是单文件接口，所以前端会把多文件拆成多个请求，分别创建多个任务。
+// Create-job page. Drag/drop and file-picker paths both normalize into File[].
+// The backend accepts one file per request, so multiple files are submitted as multiple jobs.
 export function CreateJobPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -41,10 +40,9 @@ export function CreateJobPage() {
 
   const selectedFiles = watch("files") ?? [];
 
-  // 多文件上传时逐个创建转换任务。
-  // 单文件时保留输入的任务名；多文件时自动给每个任务补序号。
   const createJobMutation = useMutation({
     mutationFn: async (values: CreateJobFormValues) => {
+      // Keep the user-provided name for one file; suffix it when one form creates many jobs.
       return await Promise.all(
         values.files.map((file, index) =>
           createDocumentToPdf(
@@ -85,8 +83,8 @@ export function CreateJobPage() {
     }
   });
 
-  // 统一处理文件选择结果，确保点击选择和拖拽上传共用同一份表单状态。
   function applyFiles(fileList: FileList | null) {
+    // Centralize file updates so validation behaves the same for drag/drop and browse.
     setValue("files", fileList ? Array.from(fileList) : [], {
       shouldDirty: true,
       shouldTouch: true,
@@ -94,8 +92,8 @@ export function CreateJobPage() {
     });
   }
 
-  // 拖拽上传只负责接收文件，真正提交仍由表单统一触发。
   function handleDrop(files: FileList | null) {
+    // Drop only updates form state; submission still happens through the form button.
     setIsDragging(false);
     applyFiles(files);
   }

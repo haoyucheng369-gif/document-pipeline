@@ -1,4 +1,4 @@
-using Azure.Messaging.ServiceBus;
+﻿using Azure.Messaging.ServiceBus;
 using CloudDocumentPipeline.Application.Abstractions.Messaging;
 using CloudDocumentPipeline.Application.Abstractions.Observability;
 using CloudDocumentPipeline.Application.Abstractions.Persistence;
@@ -14,9 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CloudDocumentPipeline.Infrastructure;
 
-// Infrastructure 娉ㄥ叆鍏ュ彛锛?
-// 褰撳墠鎶娾€滄枃浠跺瓨鍌?provider鈥濆拰鈥滄秷鎭?provider鈥濋兘闆嗕腑鍦ㄨ繖閲屽仛閰嶇疆鍒囨崲銆?
-// 杩欐牱搴旂敤灞傚彧渚濊禆鎶借薄鎺ュ彛锛屼笉鐩存帴鍏冲績 Local / AzureBlob / RabbitMq / ServiceBus 鐨勫叿浣撳疄鐜般€?
+// Centralizes provider selection for persistence, storage, messaging, and metrics.
 public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
@@ -48,11 +46,10 @@ public static class DependencyInjection
         services.AddSingleton(storageSettings);
         services.AddSingleton<IJobMetrics, JobMetrics>();
 
-        // RabbitMQ 鐩稿叧鍩虹璁炬柦鍏堢户缁敞鍐岋細
-        // 鏈湴 Development 浠嶇劧闇€瑕?RabbitMQ 璋冭瘯鑳藉姏锛岀瓑浜戜笂瀹屽叏鍒囧畬鍚庡啀鍐冲畾瑕佷笉瑕佽繘涓€姝ユ媶鍒嗘敞鍐屻€?
         services.AddSingleton<IRabbitMqConnectionProvider, RabbitMqConnectionProvider>();
         services.AddSingleton<IRabbitMqTopologyInitializer, RabbitMqTopologyInitializer>();
 
+        // Service Bus is only constructed when the configured broker provider needs it.
         if (string.Equals(messagingSettings.Provider, "ServiceBus", StringComparison.OrdinalIgnoreCase))
         {
             if (string.IsNullOrWhiteSpace(serviceBusSettings.ConnectionString))
@@ -63,6 +60,7 @@ public static class DependencyInjection
             services.AddSingleton(_ => new ServiceBusClient(serviceBusSettings.ConnectionString));
         }
 
+        // Storage provider switches between local development and Azure runtime models.
         if (string.Equals(storageSettings.Provider, "Local", StringComparison.OrdinalIgnoreCase))
         {
             services.AddSingleton<IFileStorage, LocalFileStorage>();
@@ -79,9 +77,7 @@ public static class DependencyInjection
 
         services.AddScoped<IJobRepository, JobRepository>();
 
-        // 鍙戦€佷晶鍏堟寜 provider 鍒囨崲锛?
-        // 鏈湴缁х画鍙?RabbitMQ锛宼estbed/prod 鍒囧埌 Service Bus銆?
-        // 杩欐牱鍙互鍏堝畬鎴愨€淥utbox -> 娑堟伅鎬荤嚎鈥濈殑杩佺Щ锛屽啀鍒嗛樁娈靛垏娑堣垂鑰呫€?
+        // Publishers share the same application abstraction regardless of RabbitMQ or Service Bus.
         if (string.Equals(messagingSettings.Provider, "ServiceBus", StringComparison.OrdinalIgnoreCase))
         {
             services.AddScoped<IJobMessagePublisher, ServiceBusJobMessagePublisher>();

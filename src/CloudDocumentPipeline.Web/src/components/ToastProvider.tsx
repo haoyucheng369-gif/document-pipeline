@@ -1,4 +1,4 @@
-import {
+﻿import {
   createContext,
   useCallback,
   useContext,
@@ -29,8 +29,7 @@ type ToastContextValue = {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-// 全局 toast provider：
-// 统一管理操作反馈，让创建、重试、下载等行为跨页面跳转时也能显示提示。
+// Global toast provider used by create, retry, and download workflows across routes.
 export function ToastProvider({ children }: PropsWithChildren) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const idRef = useRef(1);
@@ -41,6 +40,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
 
   const showToast = useCallback(
     ({ title, description, type = "info" }: ToastInput) => {
+      // Toasts auto-dismiss so route transitions can show feedback without manual cleanup.
       const id = idRef.current++;
       setToasts((current) => [...current, { id, title, description, type }]);
 

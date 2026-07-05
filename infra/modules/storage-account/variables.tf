@@ -1,43 +1,43 @@
-variable "name" {
-  description = "Storage Account 名称。必须全局唯一且满足 Azure 命名规则。"
+﻿variable "name" {
+  description = "Resource name."
   type        = string
 }
 
 variable "blob_container_name" {
-  description = "应用上传和结果文件使用的 Blob 容器名称。"
+  description = "Blob container name used for uploads and result files."
   type        = string
 }
 
 variable "resource_group_name" {
-  description = "Storage Account 所属的资源组名称。"
+  description = "Name of the resource group."
   type        = string
 }
 
 variable "location" {
-  description = "Storage Account 部署的 Azure 区域。"
+  description = "Azure region for resources."
   type        = string
 }
 
 variable "account_tier" {
-  description = "Storage Account 性能层。"
+  description = "Storage Account performance tier."
   type        = string
   default     = "Standard"
 }
 
 variable "account_replication_type" {
-  description = "Storage Account 副本类型。"
+  description = "Storage Account replication type."
   type        = string
   default     = "LRS"
 }
 
 variable "allow_nested_items_to_be_public" {
-  description = "是否允许存储账户中的嵌套项公开访问。"
+  description = "Whether nested items in the storage account can be public."
   type        = bool
   default     = true
 }
 
 variable "tags" {
-  description = "统一资源标签。"
+  description = "Tags applied to resources."
   type        = map(string)
   default     = {}
 }

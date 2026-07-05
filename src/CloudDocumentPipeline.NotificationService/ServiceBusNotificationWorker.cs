@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using Azure.Messaging.ServiceBus;
 using CloudDocumentPipeline.Application.Abstractions.Observability;
 using CloudDocumentPipeline.Application.Abstractions.Persistence;
@@ -13,9 +13,7 @@ using System.Diagnostics;
 
 namespace CloudDocumentPipeline.NotificationService;
 
-// Service Bus 鐗堥€氱煡娑堣垂鑰咃細
-// 浠?job-events / notification subscription 璇诲彇 JobCreatedIntegrationMessage锛?
-// 鍐嶆部鐢ㄧ幇鏈?Inbox 鍘婚噸鍜屾ā鎷熼€氱煡鍙戦€侀€昏緫銆?
+// Service Bus notification consumer for the notification subscription.
 public sealed class ServiceBusNotificationWorker : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);

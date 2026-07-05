@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using CloudDocumentPipeline.Application.Messaging;
 using CloudDocumentPipeline.Infrastructure.Messaging;
@@ -8,9 +8,7 @@ using RabbitMQ.Client.Events;
 
 namespace CloudDocumentPipeline.Api.Realtime;
 
-// Job 鐘舵€佸彉鍖栨秷璐硅€咃細
-// API 杩涚▼璁㈤槄 Worker 鍙戝嚭鐨?job.status.changed 浜嬩欢锛?
-// 鍐嶉€氳繃 SignalR 鎶婄姸鎬佸彉鍖栧箍鎾粰鍓嶇椤甸潰銆?
+// RabbitMQ-backed realtime bridge from job.status.changed events to SignalR clients.
 public sealed class JobStatusUpdatesConsumer : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
@@ -40,7 +38,7 @@ public sealed class JobStatusUpdatesConsumer : BackgroundService
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
-        // API 渚ф秷璐硅€呭彧闇€瑕佹嬁鍒颁竴涓秷璐?channel锛屽苟纭繚鐘舵€佹洿鏂伴槦鍒楁嫇鎵戝瓨鍦ㄣ€?
+        // The API owns a separate queue for realtime updates so worker and notification consumers stay isolated.
         _connection = _connectionProvider.GetConnection();
         _channel = _connection.CreateModel();
         _topologyInitializer.EnsureTopology(_channel);
@@ -65,11 +63,10 @@ public sealed class JobStatusUpdatesConsumer : BackgroundService
 
             try
             {
-                // 鍏堟妸 MQ 閲岀殑鐘舵€佸彉鍖栨秷鎭繕鍘熸垚搴旂敤灞傚绾︺€?
+                // Realtime consumers care only about the small status payload needed by the browser.
                 var message = JsonSerializer.Deserialize<JobStatusChangedIntegrationMessage>(json, JsonSerializerOptions)
                     ?? throw new InvalidOperationException("Status change message deserialization failed.");
 
-                // API 渚у彧鍋氫竴浠朵簨锛氭妸鐘舵€佸彉鍖栬浆鎴愬墠绔兘鐩戝惉鐨?SignalR 浜嬩欢銆?
                 await _hubContext.Clients.All.SendAsync(
                     "jobUpdated",
                     new
@@ -84,6 +81,7 @@ public sealed class JobStatusUpdatesConsumer : BackgroundService
             }
             catch (Exception exception)
             {
+                // Bad realtime messages are acknowledged after logging; the source of truth remains the database.
                 _logger.LogError(exception, "Failed to process job status update message: {Message}", json);
                 _channel.BasicAck(eventArgs.DeliveryTag, false);
             }
@@ -100,7 +98,7 @@ public sealed class JobStatusUpdatesConsumer : BackgroundService
 
     public override void Dispose()
     {
-        // 杩欓噷鍙噴鏀惧綋鍓?channel锛岄暱杩炴帴鐢?ConnectionProvider 缁熶竴绠＄悊銆?
+        // The shared connection provider owns the connection; this service owns only its channel.
         _channel?.Close();
         _channel?.Dispose();
         base.Dispose();

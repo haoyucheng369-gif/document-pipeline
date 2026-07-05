@@ -1,4 +1,4 @@
-using CloudDocumentPipeline.Application.Abstractions.Observability;
+﻿using CloudDocumentPipeline.Application.Abstractions.Observability;
 using CloudDocumentPipeline.Application.Abstractions.Persistence;
 using CloudDocumentPipeline.Application.Abstractions.Storage;
 using CloudDocumentPipeline.Application.Exceptions;
@@ -11,9 +11,7 @@ using System.Text.Json;
 
 namespace CloudDocumentPipeline.Application.Jobs;
 
-// 搴旂敤灞傛湇鍔★細
-// 璐熻矗缁勭粐鈥滃垱寤轰换鍔°€佹煡璇换鍔°€佷笅杞界粨鏋溿€佷笟鍔＄骇閲嶈瘯鈥濈瓑鐢ㄤ緥娴佺▼銆?
-// 褰撳墠鏂囨。杞?PDF 宸叉敼鎴愨€滄枃浠惰繘鍏ュ叡浜瓨鍌紝鏁版嵁搴撳彧瀛?storage key鈥濄€?
+// Coordinates job use cases without depending on concrete storage, database, or broker providers.
 public sealed class JobService
 {
     public const string DocumentToPdfJobType = "DocumentToPdf";
@@ -49,9 +47,10 @@ public sealed class JobService
         activity?.SetTag("job.name", request.Name);
         activity?.SetTag("correlation.id", _correlationContextAccessor.GetCorrelationId());
 
-        // 鍒涘缓浠诲姟鏃讹紝Job 鍜?Outbox 瑕佷竴璧峰啓搴擄紝纭繚鈥滀笟鍔¤褰曗€濆拰鈥滃緟鍙戞秷鎭€濅竴鑷淬€?
         var job = new Job(request.Name, request.Type, request.PayloadJson);
 
+        // Persist the job and its integration event in the same unit of work.
+        // The outbox publisher sends the event after the database commit succeeds.
         await _jobRepository.AddAsync(job, cancellationToken);
         await AddOutboxMessageAsync(job, _correlationContextAccessor.GetCorrelationId(), cancellationToken);
         await _jobRepository.SaveChangesAsync(cancellationToken);
@@ -75,7 +74,7 @@ public sealed class JobService
         byte[] fileBytes,
         CancellationToken cancellationToken = default)
     {
-        // 鍒涘缓闃舵鍏堟妸鍘熸枃浠跺啓杩涘瓨鍌ㄥ眰锛屼笟鍔¤〃閲屽彧淇濆瓨閫昏緫 storage key銆?
+        // Store file bytes outside the database and keep only logical storage keys in the job payload.
         var inputStorageKey = await _fileStorage.SaveAsync(
             "uploads",
             originalFileName,
@@ -113,7 +112,7 @@ public sealed class JobService
 
     public async Task<JobResultFileDto?> GetResultFileAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        // 涓嬭浇缁撴灉鏃讹紝鎸?output storage key 鍘诲瓨鍌ㄥ眰璇?PDF銆?
+        // Result files are downloadable only after the worker marks the job as succeeded.
         var job = await _jobRepository.GetByIdAsync(id, cancellationToken);
         if (job is null ||
             job.Type != DocumentToPdfJobType ||
@@ -185,7 +184,7 @@ public sealed class JobService
 
     public async Task RetryAsync(Guid jobId, CancellationToken cancellationToken = default)
     {
-        // 涓氬姟绾ч噸璇曪細鍏堟妸鐘舵€佷粠 Failed 鎷夊洖 Pending锛屽啀琛ヤ竴鏉℃柊鐨?outbox 娑堟伅銆?
+        // Retrying moves the domain state back to Pending and emits a new outbox message.
         var job = await _jobRepository.GetByIdAsync(jobId, cancellationToken)
             ?? throw new JobNotFoundException(jobId);
 
@@ -204,6 +203,7 @@ public sealed class JobService
 
     private async Task AddOutboxMessageAsync(Job job, string correlationId, CancellationToken cancellationToken)
     {
+        // The idempotency key stays stable for a job so consumers can safely deduplicate replays.
         var integrationMessage = new JobCreatedIntegrationMessage
         {
             MessageId = Guid.NewGuid(),

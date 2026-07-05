@@ -1,4 +1,4 @@
-import {
+﻿import {
   HubConnection,
   HubConnectionBuilder,
   HubConnectionState,
@@ -17,9 +17,9 @@ type JobUpdatedPayload = {
 let connection: HubConnection | null = null;
 let startPromise: Promise<HubConnection> | null = null;
 
+// Share one SignalR connection across pages so list and detail views do not duplicate subscriptions.
 async function ensureConnection() {
   if (connection) {
-    // 已经有连接实例时，只有断开状态才尝试重连。
     if (connection.state === HubConnectionState.Disconnected && !startPromise) {
       startPromise = connection.start().then(() => connection!);
       await startPromise.finally(() => {
@@ -30,19 +30,16 @@ async function ensureConnection() {
     return connection;
   }
 
-  // 创建全局唯一的 SignalR 连接，列表页和详情页共用这一条连接。
   connection = new HubConnectionBuilder()
-    // 测试环境后端当前使用 wildcard CORS，这里关闭 credentials，
-    // 避免 SignalR negotiate 请求因为浏览器的 CORS 规则被拦截。
     .withUrl(`${API_BASE_URL}/hubs/jobs`, {
+      // The API uses wildcard CORS in local/testbed settings, so credentials must stay disabled.
       withCredentials: false
     })
     .withAutomaticReconnect()
     .configureLogging(LogLevel.Warning)
     .build();
 
-  // 调试时如果在后端打断点，连接可能长时间收不到心跳。
-  // 这里把客户端超时放宽，减少因为调试暂停导致的误断线。
+  // Allow longer pauses during backend debugging without forcing frequent reconnects.
   connection.serverTimeoutInMilliseconds = 120_000;
   connection.keepAliveIntervalInMilliseconds = 15_000;
 
@@ -54,7 +51,6 @@ async function ensureConnection() {
   return connection;
 }
 
-// 统一订阅 Job 状态更新事件，供列表页和详情页复用。
 export async function subscribeToJobUpdates(
   handler: (payload: JobUpdatedPayload) => void
 ) {

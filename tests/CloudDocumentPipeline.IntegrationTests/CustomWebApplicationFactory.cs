@@ -1,4 +1,4 @@
-using CloudDocumentPipeline.Infrastructure.Persistence;
+﻿using CloudDocumentPipeline.Infrastructure.Persistence;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -10,9 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CloudDocumentPipeline.IntegrationTests;
 
-// 闆嗘垚娴嬭瘯瀹夸富锛?
-// 鍚姩鐪熷疄 API锛屽苟鎶?AppDbContext 鏇挎崲鎴?InMemory provider銆?
-// 杩欐牱鍙互楠岃瘉 HTTP -> 搴旂敤鏈嶅姟 -> 鎸佷箙鍖栬惤搴撶殑瀹屾暣娴佺▼锛屽張涓嶇敤棰濆缁存姢娴嬭瘯涓撶敤鏁版嵁搴撱€?
+// Integration-test host that runs the real API pipeline with in-memory persistence and local storage.
 public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     private string _databaseName = default!;
@@ -37,9 +35,7 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
-            // 闆嗘垚娴嬭瘯鍙叧蹇?HTTP -> 搴旂敤鏈嶅姟 -> 鎸佷箙鍖栭摼璺€?
-            // API 閲岄偅涓敤浜?SignalR 瀹炴椂杞彂鐨?RabbitMQ 鍚庡彴娑堣垂鑰呭湪 CI 娴嬭瘯鐜閲屾病鏈夊繀瑕佸惎鍔紝
-            // 鍚﹀垯瀹冧細鍦ㄥ涓诲惎鍔ㄦ椂灏濊瘯杩炴帴 RabbitMQ锛屽鑷存祴璇曠幆澧冮澶栦緷璧栨秷鎭腑闂翠欢銆?
+            // Integration tests cover HTTP -> application -> persistence; hosted broker consumers stay disabled.
             services.RemoveAll<IHostedService>();
 
             services.RemoveAll<DbContextOptions<AppDbContext>>();

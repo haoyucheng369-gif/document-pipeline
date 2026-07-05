@@ -1,14 +1,14 @@
-output "name" {
-  description = "Container App Job 名称。"
+﻿output "name" {
+  description = "Resource name."
   value       = azurerm_container_app_job.this.name
 }
 
 output "id" {
-  description = "Container App Job 资源 ID。"
+  description = "Resource ID."
   value       = azurerm_container_app_job.this.id
 }
 
 output "principal_id" {
-  description = "Container App Job 的 SystemAssigned Managed Identity principal id。"
+  description = "Principal ID for the system-assigned managed identity."
   value       = try(azurerm_container_app_job.this.identity[0].principal_id, null)
 }

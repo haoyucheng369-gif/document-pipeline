@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Text.Json;
 using CloudDocumentPipeline.Application.Abstractions.Messaging;
 using CloudDocumentPipeline.Application.Abstractions.Observability;
@@ -23,12 +23,10 @@ namespace CloudDocumentPipeline.Worker;
 public sealed class RabbitMqWorker : BackgroundService
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
-    // 鍚屼竴鏉℃秷鎭細琚笉鍚?consumer 鍒嗗埆澶勭悊锛屾墍浠ヨ繖閲岀殑娑堣垂鑰呭悕绉拌鍥哄畾銆?
-    // Inbox 鍘婚噸涓?claim 鎶㈠崰渚濊禆 (MessageId, ConsumerName) 杩欑粍鍞竴閿€?
+    // Inbox deduplication is scoped by message ID and consumer name.
     private const string ConsumerName = "CloudDocumentPipeline.JobConsumer";
-    // 瓒呰繃鏈€澶ч噸璇曟鏁板悗锛岃繖鏉℃秷鎭笉鍐嶅洖涓绘祦绋嬶紝鑰屾槸杩涘叆 DLQ 绛夊緟鎺掓煡銆?
+    // RabbitMQ retries are explicit delayed republishes before the message moves to the DLQ.
     private const int MaxRetryCount = 3;
-    // 绠€鍗曢樁姊紡 backoff锛氱 1/2/3 娆￠噸璇曞垎鍒欢杩?1s / 5s / 30s銆?
     private static readonly int[] RetryDelaysInSeconds = [1, 5, 30];
 
     private readonly IServiceScopeFactory _scopeFactory;
@@ -56,13 +54,12 @@ public sealed class RabbitMqWorker : BackgroundService
 
     public override Task StartAsync(CancellationToken cancellationToken)
     {
-        // StartAsync 鍙礋璐ｅ噯澶?RabbitMQ 娑堣垂閫氶亾銆?
-        // 闀胯繛鎺ヤ氦缁欏叕鍏?ConnectionProvider 澶嶇敤锛屾嫇鎵戝０鏄庝氦缁欏叕鍏卞垵濮嬪寲鍣ㄣ€?
+        // Keep the connection setup separate from message handling so startup failures are visible.
         _connection = _connectionProvider.GetConnection();
         _channel = _connection.CreateModel();
         _topologyInitializer.EnsureTopology(_channel);
 
-        // 闄愬埗鍗曚釜 consumer 鍚屾椂鎶撳彇鍦ㄦ墜涓婄殑鏈‘璁ゆ秷鎭暟锛岄伩鍏嶇灛闂存媺澶娑堟伅銆?
+        // Limit unacknowledged deliveries per worker instance to avoid overloading storage and SQL.
         _channel.BasicQos(prefetchSize: 0, prefetchCount: 10, global: false);
 
         _logger.LogInformation("RabbitMQ worker connected. Queue: {QueueName}", _settings.QueueName);
@@ -75,12 +72,10 @@ public sealed class RabbitMqWorker : BackgroundService
         if (_channel is null)
             throw new InvalidOperationException("RabbitMQ channel is not initialized.");
 
-        // EventingBasicConsumer 鏄€滄秷鎭埌浜嗗啀鍥炶皟鎴戔€濈殑浜嬩欢椹卞姩妯″紡銆?
         var consumer = new EventingBasicConsumer(_channel);
 
         consumer.Received += async (_, eventArgs) =>
         {
-            // 鍏堟嬁鍒?RabbitMQ 閲岀殑鍘熷娑堟伅浣擄紝鍚庨潰鎵€鏈夊鐞嗛兘鍩轰簬杩欎唤 JSON銆?
             var body = eventArgs.Body.ToArray();
             var json = Encoding.UTF8.GetString(body);
 
@@ -88,17 +83,16 @@ public sealed class RabbitMqWorker : BackgroundService
 
             try
             {
-                // 鍏堟妸娑堟伅浣撹繕鍘熸垚搴旂敤灞傚绾﹀璞★紝鍚庨潰涓氬姟閫昏緫閮藉洿缁曡繖涓璞″睍寮€銆?
+                // RabbitMQ carries the raw integration contract serialized by the outbox publisher.
                 var message = JsonSerializer.Deserialize<JobCreatedIntegrationMessage>(json, JsonSerializerOptions)
                     ?? throw new InvalidOperationException("Message deserialization failed.");
 
-                // 鎶?CorrelationId 鍘嬭繘鏃ュ織涓婁笅鏂囷紝鍚庣画杩欐潯娑堟伅澶勭悊閾句笂鐨勬棩蹇楀氨鑳戒覆璧锋潵銆?
                 using (LogContext.PushProperty("CorrelationId", message.CorrelationId))
                 {
                     using var scope = _scopeFactory.CreateScope();
                     var inboxRepository = scope.ServiceProvider.GetRequiredService<IInboxMessageRepository>();
 
-                    // 鍏?claim 鍐嶅鐞嗭細鍙湁鎶㈠埌澶勭悊鏉冪殑瀹炰緥鎵嶈兘缁х画鎵ц涓氬姟閫昏緫銆?
+                    // Claim before side effects so duplicate deliveries do not generate duplicate PDFs.
                     var claimed = await inboxRepository.TryClaimAsync(
                         message.MessageId,
                         ConsumerName,
@@ -112,7 +106,6 @@ public sealed class RabbitMqWorker : BackgroundService
                         return;
                     }
 
-                    // 濡傛灉涓氬姟宸茬粡鎴愬姛杩囦簡锛屽彧琛ラ綈 Inbox 鐘舵€侊紝涓嶅啀閲嶅鎵ц鍓綔鐢ㄣ€?
                     var completion = await TryCompleteAlreadySucceededJobAsync(message, stoppingToken);
                     if (completion)
                     {
@@ -121,10 +114,9 @@ public sealed class RabbitMqWorker : BackgroundService
                         return;
                     }
 
-                    // 鐪熸鐨勪笟鍔″壇浣滅敤鏀惧湪鐙珛鏈嶅姟閲屾墽琛岋紝Worker 杩欓噷鍙礋璐ｇ紪鎺掍笌鐘舵€佹帶鍒躲€?
                     var resultJson = await ExecuteSideEffectsAsync(message, stoppingToken);
 
-                    // 鎴愬姛璺緞閲屾妸 Job 鍜?Inbox 涓€璧锋彁浜わ紝閬垮厤鐘舵€佷笉涓€鑷淬€?
+                    // Job and inbox state are committed together after the external side effect succeeds.
                     await CompleteMessageAsync(message, resultJson, stoppingToken);
 
                     _channel.BasicAck(eventArgs.DeliveryTag, false);
@@ -154,8 +146,7 @@ public sealed class RabbitMqWorker : BackgroundService
         JobCreatedIntegrationMessage message,
         CancellationToken cancellationToken)
     {
-        // 涓氬姟骞傜瓑淇濇姢锛?
-        // 濡傛灉 Job 宸茬粡鎴愬姛锛屽垯鍙渶瑕佹妸褰撳墠 Inbox 浠?Processing 琛ユ垚 Processed銆?
+        // A replay can arrive after an earlier attempt already completed the job.
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -210,8 +201,6 @@ public sealed class RabbitMqWorker : BackgroundService
         string resultJson,
         CancellationToken cancellationToken)
     {
-        // 鎴愬姛璺緞鐨勬暟鎹簱浜嬪姟杈圭晫锛?
-        // Job 鐘舵€佹洿鏂?+ Inbox 鐘舵€佹洿鏂板繀椤讳竴璧锋彁浜ゃ€?
         using var scope = _scopeFactory.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var jobMetrics = scope.ServiceProvider.GetRequiredService<IJobMetrics>();
@@ -228,14 +217,12 @@ public sealed class RabbitMqWorker : BackgroundService
 
         if (job.Status == JobStatus.Succeeded)
         {
-            // 鍙屼繚闄╋細鍗充娇鍒拌繖閲屾墠鍙戠幇 Job 宸叉垚鍔燂紝涔熶笉瑕侀噸澶嶆墽琛屼笟鍔″畬鎴愰€昏緫銆?
             inbox.MarkProcessed();
             await dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return;
         }
 
-        // 鍙湁 Pending -> Processing -> Succeeded 杩欐潯鍚堟硶璺緞鎵嶈兘璧板埌杩欓噷銆?
         job.MarkProcessing();
         job.MarkSucceeded(resultJson);
         inbox.MarkProcessed();
@@ -260,9 +247,7 @@ public sealed class RabbitMqWorker : BackgroundService
         IBasicProperties? properties,
         CancellationToken cancellationToken)
     {
-        // 澶辫触澶勭悊鍒嗕袱灞傦細
-        // 1. 鍏堟妸鏁版嵁搴撻噷鐨?Job / Inbox 鐘舵€佷慨姝ｄ负澶辫触
-        // 2. 鍐嶅喅瀹氭秷鎭眰鏄噸璇曡繕鏄繘鍏?DLQ
+        // Record the business failure before deciding whether broker-level retry is still allowed.
         await TryMarkFailedAsync(json, exception, cancellationToken);
 
         try
@@ -272,7 +257,7 @@ public sealed class RabbitMqWorker : BackgroundService
 
             if (disposition == MessageFailureDisposition.Retry && retryCount < MaxRetryCount)
             {
-                // 鍙噸璇曢敊璇蛋 backoff锛氭秷鎭厛杩涘叆 retry queue锛岃繃 TTL 鍐嶅洖涓婚槦鍒椼€?
+                // The retry queue uses TTL plus dead-letter routing to return messages later.
                 RepublishWithRetry(body, retryCount + 1);
                 _logger.LogWarning(
                     "Retryable error. Message scheduled for retry {RetryCount} after {DelaySeconds}s",
@@ -281,7 +266,6 @@ public sealed class RabbitMqWorker : BackgroundService
             }
             else
             {
-                // 涓嶅彲閲嶈瘯锛屾垨閲嶈瘯娆℃暟宸茬敤灏斤紝杞叆 DLQ銆?
                 PublishToDeadLetter(body);
                 _logger.LogError(
                     "Message moved to DLQ. Disposition: {Disposition}, RetryCount: {RetryCount}",
@@ -299,7 +283,6 @@ public sealed class RabbitMqWorker : BackgroundService
     {
         try
         {
-            // 灏介噺鎶婂け璐ョ姸鎬佽惤鍥炴暟鎹簱锛岄伩鍏?Job / Inbox 涓€鐩村崱鍦?Processing銆?
             var message = JsonSerializer.Deserialize<JobCreatedIntegrationMessage>(json, JsonSerializerOptions);
             if (message is null)
             {
@@ -355,7 +338,7 @@ public sealed class RabbitMqWorker : BackgroundService
         string correlationId,
         CancellationToken cancellationToken)
     {
-        // 鐘舵€佸彉鍖栭€氱煡涓嶆槸涓讳笟鍔℃秷鎭紝鎵€浠ヨ繖閲岀洿鎺ュ鐢ㄧ粺涓€鍙戝竷鍣ㄥ彂閫併€?
+        // Status changes are published through the configured broker so API realtime consumers can fan out.
         using var scope = _scopeFactory.CreateScope();
         var publisher = scope.ServiceProvider.GetRequiredService<IJobMessagePublisher>();
 
@@ -379,7 +362,6 @@ public sealed class RabbitMqWorker : BackgroundService
 
     private int GetRetryCount(IBasicProperties? properties)
     {
-        // 閲嶈瘯娆℃暟瀛樻斁鍦?RabbitMQ header 閲岋紝鑰屼笉鏄秷鎭綋閲屻€?
         if (properties?.Headers is null)
             return 0;
 
@@ -400,9 +382,6 @@ public sealed class RabbitMqWorker : BackgroundService
         if (_channel is null)
             return;
 
-        // 寤惰繜閲嶈瘯锛?
-        // 鍏堝彂鍒?retry queue锛屽苟璁剧疆 TTL锛?
-        // TTL 鍒版湡鍚庯紝RabbitMQ 浼氶€氳繃 dead-letter 鎶婃秷鎭噸鏂拌矾鐢卞洖涓婚槦鍒椼€?
         var properties = _channel.CreateBasicProperties();
         properties.Persistent = true;
         properties.Expiration = TimeSpan.FromSeconds(GetRetryDelaySeconds(retryCount)).TotalMilliseconds.ToString("F0");
@@ -455,8 +434,6 @@ public sealed class RabbitMqWorker : BackgroundService
 
     public override void Dispose()
     {
-        // Hosted service 閫€鍑烘椂鍙叧闂綋鍓?channel銆?
-        // 闀胯繛鎺ョ敱 ConnectionProvider 鎸夎繘绋嬬粺涓€澶嶇敤鍜岄噴鏀俱€?
         _channel?.Close();
         _channel?.Dispose();
         base.Dispose();

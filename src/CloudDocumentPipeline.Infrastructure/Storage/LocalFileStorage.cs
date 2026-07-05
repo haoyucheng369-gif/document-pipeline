@@ -1,10 +1,9 @@
-using CloudDocumentPipeline.Application.Abstractions.Storage;
+﻿using CloudDocumentPipeline.Application.Abstractions.Storage;
 using Microsoft.Extensions.Logging;
 
 namespace CloudDocumentPipeline.Infrastructure.Storage;
 
-// 鏈湴鏂囦欢瀛樺偍瀹炵幇锛?
-// 涓氬姟灞傚彧浼?storage key锛屽疄闄呯墿鐞嗕綅缃敱鏈湴鏍圭洰褰曞拰 key 缁勫悎鍑烘潵銆?
+// Local filesystem storage used for development and container-compose runs.
 public sealed class LocalFileStorage : IFileStorage
 {
     private readonly ILogger<LocalFileStorage> _logger;
@@ -23,6 +22,7 @@ public sealed class LocalFileStorage : IFileStorage
         byte[] content,
         CancellationToken cancellationToken = default)
     {
+        // Storage keys are relative and portable; absolute paths never leave this provider.
         var storageKey = BuildStorageKey(category, fileName);
         var absolutePath = GetAbsolutePath(storageKey);
         var directory = Path.GetDirectoryName(absolutePath)!;
@@ -50,6 +50,7 @@ public sealed class LocalFileStorage : IFileStorage
         var normalized = storageKey.Replace('/', Path.DirectorySeparatorChar);
         var absolutePath = Path.GetFullPath(Path.Combine(_rootPath, normalized));
 
+        // Prevent path traversal through crafted storage keys.
         if (!absolutePath.StartsWith(_rootPath, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("The storage key points outside the configured root directory.");
@@ -62,6 +63,7 @@ public sealed class LocalFileStorage : IFileStorage
     {
         var extension = Path.GetExtension(fileName);
         var baseName = Path.GetFileNameWithoutExtension(fileName);
+        // Add a unique suffix so uploads with the same original name do not overwrite each other.
         var safeFileName = $"{baseName}-{Guid.NewGuid():N}{extension}";
 
         return string.Join('/',

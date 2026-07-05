@@ -1,19 +1,19 @@
-output "name" {
-  description = "Storage Account 名称。"
+﻿output "name" {
+  description = "Resource name."
   value       = azurerm_storage_account.this.name
 }
 
 output "id" {
-  description = "Storage Account 资源 ID。"
+  description = "Resource ID."
   value       = azurerm_storage_account.this.id
 }
 
 output "primary_blob_endpoint" {
-  description = "主 Blob Endpoint。"
+  description = "Primary Blob service endpoint."
   value       = azurerm_storage_account.this.primary_blob_endpoint
 }
 
 output "blob_container_name" {
-  description = "Blob 容器名称。"
+  description = "Blob container name used for uploads and result files."
   value       = azurerm_storage_container.uploads.name
 }

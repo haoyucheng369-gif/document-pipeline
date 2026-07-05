@@ -1,4 +1,4 @@
-using CloudDocumentPipeline.Application.Abstractions.Observability;
+﻿using CloudDocumentPipeline.Application.Abstractions.Observability;
 using CloudDocumentPipeline.Application.Abstractions.Processing;
 using CloudDocumentPipeline.Application.Abstractions.Storage;
 using CloudDocumentPipeline.Application.Jobs;
@@ -14,9 +14,7 @@ using System.Text.RegularExpressions;
 
 namespace CloudDocumentPipeline.Worker;
 
-// 鍓綔鐢ㄦ墽琛屽櫒锛?
-// 鐪熸鎵胯浇鈥滄枃妗ｈ浆 PDF鈥濈殑涓氬姟閫昏緫銆?
-// 褰撳墠鏀规垚鍏堜粠瀛樺偍灞傝鍙栧師鏂囦欢锛屽啀鎶?PDF 缁撴灉鍐欏洖瀛樺偍灞傘€?
+// Executes the external work for a job. For this project the side effect is PDF generation.
 public sealed class JobSideEffectExecutor : IJobSideEffectExecutor
 {
     private static readonly JsonSerializerOptions JsonSerializerOptions = new(JsonSerializerDefaults.Web);
@@ -63,7 +61,7 @@ public sealed class JobSideEffectExecutor : IJobSideEffectExecutor
         var payload = JsonSerializer.Deserialize<DocumentToPdfJobPayload>(payloadJson, JsonSerializerOptions)
             ?? throw new JsonException("DocumentToPdf payload is invalid.");
 
-        // 澶勭悊闃舵浠庤緭鍏?storage key 璇诲彇鍘熸枃浠讹紝鍐嶆寜鏂囦欢绫诲瀷鐢熸垚 PDF銆?
+        // Read from the configured storage provider and write the generated file back to storage.
         var fileBytes = await _fileStorage.ReadAsync(payload.InputStorageKey, cancellationToken)
             ?? throw new FileNotFoundException(
                 $"Input file '{payload.InputStorageKey}' was not found in storage.");
@@ -107,6 +105,7 @@ public sealed class JobSideEffectExecutor : IJobSideEffectExecutor
 
     private static byte[] GeneratePdf(DocumentToPdfJobPayload payload, byte[] fileBytes)
     {
+        // Images are embedded directly. Text-based files are normalized to plain text first.
         return Document.Create(container =>
         {
             container.Page(page =>
@@ -158,6 +157,7 @@ public sealed class JobSideEffectExecutor : IJobSideEffectExecutor
 
     private static string ConvertHtmlToPlainText(string html)
     {
+        // This is intentionally lightweight; it is a display conversion, not a full HTML renderer.
         var withLineBreaks = Regex.Replace(html, @"<(br|/p|/div|/li|/h[1-6])\b[^>]*>", Environment.NewLine, RegexOptions.IgnoreCase);
         var withoutTags = Regex.Replace(withLineBreaks, "<[^>]+>", string.Empty, RegexOptions.Singleline);
         return WebUtility.HtmlDecode(withoutTags).Trim();
@@ -165,6 +165,7 @@ public sealed class JobSideEffectExecutor : IJobSideEffectExecutor
 
     private static string ConvertMarkdownToPlainText(string markdown)
     {
+        // Strip the small subset of Markdown syntax supported by the current conversion flow.
         var text = markdown
             .Replace("### ", string.Empty)
             .Replace("## ", string.Empty)
